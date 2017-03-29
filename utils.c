@@ -81,6 +81,19 @@ void env_print(environment* env){
 	}
 }
 
+void node_print_rec(node* n){
+	if (n == NULL) return;
+	node_print_rec(n->l);
+	printf(" %d", n->type);
+	node_print_rec(n->r);
+}
+
+void node_print(node* n){
+	printf("### Programme ###\n");
+	node_print_rec(n);
+	printf("\n");
+}
+
 node* first_node;
 
 node* new_node_str(int type, char* key, node* l, node* r, node* c){
@@ -97,6 +110,15 @@ node* new_node_val(int type, int key, node* l, node* r, node* c){
 	node* output = malloc(sizeof(node));
 	output->type = type;
 	output->key.i = key;
+	output->l = l;
+	output->r = r;
+	output->condition = c;
+	first_node = output;
+}
+
+node* new_node(int type, node* l, node* r, node* c){
+	node* output = malloc(sizeof(node));
+	output->type = type;
 	output->l = l;
 	output->r = r;
 	output->condition = c;

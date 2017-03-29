@@ -54,7 +54,11 @@ struct s_func_env{
 /*
  *	Creer une node d'arbre de syntaxe abstrait.
  */
-node* new_node(int type, char* id, int value, node* l, node* r, node* condition);
+node* new_node_str(int type, char* key, node* l, node* r, node* c);
+
+node* new_node_val(int type, int key, node* l, node* r, node* c);
+
+node* new_node(int type, node* l, node* r, node* c);
 
 void new_var(environment* env, char* id, int type, int val);
 
@@ -71,6 +75,8 @@ void env_func_add(environment_func* env, env_func* func);
 node* new_node_str(int type, char* key, node* l, node* r, node* c);
 
 node* new_node_val(int type, int key, node* l, node* r, node* c);
+
+void node_print(node* n);
 
 void env_print(environment* env);
 
