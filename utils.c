@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "utils.h"
+#include "bison_ipp.h"
 
 FILE *out;
 
@@ -84,7 +85,9 @@ void env_print(environment* env){
 void node_print_rec(node* n){
 	if (n == NULL) return;
 	node_print_rec(n->l);
-	printf(" %d", n->type);
+	if (n->type == I){printf("%d ", n->key.i);}
+	if (n->type == V){printf("%s ", n->key.c);}
+	else printf("[%d] ", n->type);
 	node_print_rec(n->r);
 }
 

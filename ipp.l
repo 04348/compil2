@@ -45,7 +45,7 @@ array[ ]+of			{return(Ta);}
 :			{return(Dp);}
 ,			{return(Vg);}
 
-{i}		{yylval = new_node_val(I, 0, NULL, NULL, NULL); return(I);}
+{i}		{yylval = new_node_val(I, atoi(yytext), NULL, NULL, NULL); return(I);}
 {v}		{yylval = new_node_str(V, yytext, NULL, NULL, NULL); return(V);}
 
 {blank} {}
