@@ -80,6 +80,8 @@ void node_print(node* n);
 
 void env_print(environment* env);
 
+int node_exec(environment* env, node* n);
+
 int yylex();
 
 int yyerror(char *s);

@@ -127,5 +127,7 @@ int main(int argc, char *argv[]){
 	yyparse();
 	env_print(glob_env);
 	node_print(first_node);
+	node_exec(glob_env , first_node);
+	env_print(glob_env);
 	return 0;
 }

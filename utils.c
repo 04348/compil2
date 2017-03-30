@@ -62,16 +62,58 @@ void env_add(environment* env, env_var* var){
 	}
 	env->vars[env->nb_var] = var;
 	++(env->nb_var);
-	
+}
+
+int var_geti(environment* env, char* id){
+	for(int i = 0; i < env->nb_var; ++i){
+		if(strcmp(env->vars[i]->id, id) == 0) return i;
+	}
+	printf("Var not found\n");
+	return -1;
 }
 
 void env_func_add(environment_func* env, env_func* func);
+char* getToken(int tk){
+	if (tk == T_boo) return "T_boo";
+	if (tk == T_int) return "T_int";
+	if (tk == Def) return "Def";
+	if (tk == Dep) return "Dep";
+	if (tk == Af) return "Af";
+	if (tk == Sk) return "Sk";
+	if (tk == true) return "true";
+	if (tk == false) return "false";
+	if (tk == Se) return "\n";
+	if (tk == If) return "If";
+	if (tk == Th) return "Th";
+	if (tk == El) return "El";
+	if (tk == Var) return "Var";
+	if (tk == Wh) return "Wh";
+	if (tk == Do) return "Do";
+	if (tk == Pl) return "Pl";
+	if (tk == Mo) return "Mo";
+	if (tk == Mu) return "Mu";
+	if (tk == And) return "And";
+	if (tk == Or) return "Or";
+	if (tk == Not) return "Not";
+	if (tk == Lt) return "Lt";
+	if (tk == Eq) return "Eq";
+	if (tk == V) return "V";
+	if (tk == I) return "I";
+	if (tk == Na) return "Na";
+	if (tk == Ta) return "Ta";
+	if (tk == Po) return "Po";
+	if (tk == Pc) return "Pc";
+	if (tk == Co) return "Co";
+	if (tk == Cc) return "Cc";
+	if (tk == Ao) return "Ao";
+	if (tk == Ac) return "Ac";
+	if (tk == Dp) return "Dp";
+	if (tk == Vg) return "Vg";
+	else return "UNKNOW_TOKEN";
+}
 
 void var_print(env_var* var){
 	printf("variable %s DIM:%d, TYPE:%d, VAL:%d", var->id, var->size, var->type, var->val);
-	/*if (env->vars[i]->type == T_INT) printf("(INT) %s : %i", env->vars[i]->id, env->vars[i]->val);
-	if (env->vars[i]->type == T_BOOL) printf("(BOOL) %s : %i", env->vars[i]->id, env->vars[i]->val);
-	if (env->vars[i]->type == T_ARRAY) printf("(ARRAY) %s[%i] : ", env->vars[i]->id, env->vars[i]->val);*/
 }
 
 void env_print(environment* env){
@@ -83,18 +125,55 @@ void env_print(environment* env){
 }
 
 void node_print_rec(node* n){
-	if (n == NULL) return;
-	node_print_rec(n->l);
-	if (n->type == I){printf("%d ", n->key.i);}
-	if (n->type == V){printf("%s ", n->key.c);}
-	else printf("[%d] ", n->type);
-	node_print_rec(n->r);
+	if (n->l != NULL) {
+		if (n->type != Se)printf("(");
+		node_print_rec(n->l);
+		if (n->type != Se)printf(")");
+	} 
+	if (n->type == I){printf("%d", n->key.i);}
+	else if (n->type == V){printf("%s", n->key.c);}
+	else if (n->type == T_boo){printf("%s", n->key.c==0?"TRUE":"FALSE");}
+	else printf("%s", getToken(n->type));
+
+	if (n->r != NULL) {
+		if (n->type != Se)printf("(");
+		node_print_rec(n->r);
+		if (n->type != Se)printf(")");
+	} 
 }
 
 void node_print(node* n){
 	printf("### Programme ###\n");
 	node_print_rec(n);
 	printf("\n");
+}
+
+int node_exec(environment* env, node* n){
+	if(n==NULL) return -1;
+	switch(n->type){
+		case Se:{
+			node_exec(env, n->l);
+			node_exec(env, n->r);
+			break;
+		}
+		case I:{
+			return n->key.i;
+			break;
+		}
+		case T_boo:{
+			return n->key.i;
+			break;
+		}
+		case V:{
+			return var_geti(env, n->key.c);
+			break;
+		}
+		case Af:{
+			env->vars[node_exec(env, n->l)]->val = (n->r)->type==V?(env->vars[node_exec(env, n->r)])->val:node_exec(env, n->r);
+			break;
+		}
+			
+	}
 }
 
 node* first_node;
