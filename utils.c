@@ -168,6 +168,7 @@ void* node_exec(environment* env, node* n){
 			node_exec(env, n->r);
 			break;
 		}
+//		### Variables/Constantes ###
 		case I:{
 			return (void*)((intptr_t)n->key.i);
 			break;
@@ -185,6 +186,7 @@ void* node_exec(environment* env, node* n){
 			return (void*)( (env->vars[var_geti(env, (n->l)->key.c)])->arr[index] );
 			break;
 		}
+//		### Affectation ###
 		case Af:{
 			env_var* cvar = (env_var*)node_exec(env, n->l);
 
@@ -204,6 +206,21 @@ void* node_exec(environment* env, node* n){
 		}
 		case Na:{
 			return (void*)node_exec(env, n->r);
+			break;
+		}
+//		### Op Logiques ###
+		case Or:{
+			int val1 = (intptr_t)(node_exec(env, n->l));
+			int val2 = (intptr_t)(node_exec(env, n->r));
+			return (void*)( (intptr_t)(val1|val2) );
+			break;
+		}
+		case Not:{
+			return (void*)( (intptr_t)!((intptr_t)(node_exec(env, n->l))) );
+			break;
+		}
+		case And:{
+			return (void*)( (intptr_t)(node_exec(env, n->l))&(intptr_t)(node_exec(env, n->r)) );
 			break;
 		}
 			
