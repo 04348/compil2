@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdint.h>
 #include "utils.h"
 #include "bison_ipp.h"
 
@@ -19,7 +20,7 @@ char* strcopy(char* str){
 void new_var(environment* env, char* id, int type, int val){
 	env_var* var = malloc(sizeof(env_var));
 	var->id = strcopy(id);
-	if (type == T_ARRAY){
+	if (type == T_array){
 		var->size = val;
 		var->arr = malloc(sizeof(env_var*)*val);
 	} else {
@@ -76,6 +77,8 @@ void env_func_add(environment_func* env, env_func* func);
 char* getToken(int tk){
 	if (tk == T_boo) return "T_boo";
 	if (tk == T_int) return "T_int";
+	if (tk == T_array) return "T_array";
+	if (tk == V_array) return "V_array";
 	if (tk == Def) return "Def";
 	if (tk == Dep) return "Dep";
 	if (tk == Af) return "Af";
@@ -109,11 +112,20 @@ char* getToken(int tk){
 	if (tk == Ac) return "Ac";
 	if (tk == Dp) return "Dp";
 	if (tk == Vg) return "Vg";
-	else return "UNKNOW_TOKEN";
+	return "UNKNOW_TOKEN";
 }
 
 void var_print(env_var* var){
-	printf("variable %s DIM:%d, TYPE:%d, VAL:%d", var->id, var->size, var->type, var->val);
+	printf("variable %s DIM:%d, TYPE:%s, VAL:", var->id, var->size, getToken(var->type));
+	if (var->type != T_array){
+			printf("%d", var->val);
+	} else {
+		printf("[");
+		for(int i = 0; i < var->size; ++i){
+			printf("%d,", (var->arr[i])->val);
+		}
+		printf("]");
+	}
 }
 
 void env_print(environment* env){
@@ -148,8 +160,8 @@ void node_print(node* n){
 	printf("\n");
 }
 
-int node_exec(environment* env, node* n){
-	if(n==NULL) return -1;
+void* node_exec(environment* env, node* n){
+	if(n==NULL) return (void*)-1;
 	switch(n->type){
 		case Se:{
 			node_exec(env, n->l);
@@ -157,23 +169,46 @@ int node_exec(environment* env, node* n){
 			break;
 		}
 		case I:{
-			return n->key.i;
+			return (void*)((intptr_t)n->key.i);
 			break;
 		}
 		case T_boo:{
-			return n->key.i;
+			return (void*)((intptr_t)n->key.i);
 			break;
 		}
 		case V:{
-			return var_geti(env, n->key.c);
+			return (void*)env->vars[var_geti(env, n->key.c)];
+			break;
+		}
+		case V_array:{
+			int index = (intptr_t)(node_exec(env, n->r));
+			return (void*)( (env->vars[var_geti(env, (n->l)->key.c)])->arr[index] );
 			break;
 		}
 		case Af:{
-			env->vars[node_exec(env, n->l)]->val = (n->r)->type==V?(env->vars[node_exec(env, n->r)])->val:node_exec(env, n->r);
+			env_var* cvar = (env_var*)node_exec(env, n->l);
+
+			if((n->r)->type == V) {
+				cvar->val = ((env_var*)(node_exec(env, n->r)))->val;
+			} else if((n->r)->type == Na) {
+				cvar->size = (intptr_t)(node_exec(env, n->r));
+				cvar->arr = malloc(sizeof(env_var*)*cvar->size);
+				for(int i = 0; i < cvar->size; ++i){
+					cvar->arr[i] = malloc(sizeof(env_var));
+					(cvar->arr[i])->val = 0;
+				}
+			} else {
+				cvar->val = (intptr_t)(node_exec(env, n->r));
+			}
+			break;
+		}
+		case Na:{
+			return (void*)node_exec(env, n->r);
 			break;
 		}
 			
 	}
+	return (void*)-1;
 }
 
 node* first_node;

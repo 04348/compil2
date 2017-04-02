@@ -6,7 +6,7 @@
 
 #define INITIAL_ENV_SIZE 10
 
-enum TYPES {T_INT, T_BOOL, T_ARRAY};
+//enum TYPES {T_INT, T_BOOL, T_ARRAY};
 
 typedef struct s_node node;
 struct s_node{
@@ -26,7 +26,7 @@ struct s_var{
 		int size;
 		int type;
 		int val;
-		env_var* arr;
+		env_var** arr;
 };
 
 typedef struct s_env environment;
@@ -80,7 +80,7 @@ void node_print(node* n);
 
 void env_print(environment* env);
 
-int node_exec(environment* env, node* n);
+void* node_exec(environment* env, node* n);
 
 int yylex();
 

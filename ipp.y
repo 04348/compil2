@@ -7,42 +7,7 @@
 %}
 
 %define api.value.type {node*}
-
-%token T_boo
-%token T_int
-%token Def
-%token Dep
-%token Af
-%token Sk
-%token true
-%token false
-%token Se
-%token If
-%token Th
-%token El
-%token Var
-%token Wh
-%token Do
-%token Pl
-%token Mo
-%token Mu
-%token And
-%token Or
-%token Not
-%token Lt
-%token Eq
-%token V
-%token I
-%token Na
-%token Ta
-%token Po
-%token Pc
-%token Co
-%token Cc
-%token Ao
-%token Ac
-%token Dp
-%token Vg
+%token T_boo T_int T_array Def Dep Af Sk true false Se If Th El Var Wh Do Pl Mo Mu And Or Not Lt Eq V V_array I Na Ta Po Pc Co Cc Ao Ac Dp Vg
 
 
 %%
@@ -60,12 +25,12 @@ E: 	E Pl E			{$$ = new_node(Pl, $1, $3, NULL);}
 	| I				{$$ = $1;}
 	| V				{$$ = $1;}
 	| true			{$$ = new_node_val(T_boo, 0, NULL, NULL, NULL);}
-	| false			{$$ = new_node_val(T_boo, 404, NULL, NULL, NULL);}
+	| false			{$$ = new_node_val(T_boo, 1, NULL, NULL, NULL);}
 	| V Po L_args Pc{/*  */}
-	| Na TP Co E Cc	{/* New Array */}
+	| Na TP Co E Cc	{$$ = new_node(Na, $2, $4, NULL);} //Nouveau tableau
 	| Et			{$$ = $1;}
 
-Et: V Co E Cc
+Et: V Co E Cc		{$$ = new_node(V_array, $1, $3, NULL);} //tableau
 	| Et Co E Cc
 
 C: 	C Se C				{$$ = new_node(Se, $1, $3, NULL);}
@@ -80,8 +45,8 @@ C: 	C Se C				{$$ = new_node(Se, $1, $3, NULL);}
 L_args: %empty
 		| L_argsnn
 
-L_argsnn: E
-		| E Vg L_argsnn
+L_argsnn: E				{$$ = $1;}
+		| E Vg L_argsnn	{$$ = new_node(Vg, $1, $3, NULL);}
 
 L_argt: %empty
 		| L_argtnn
@@ -91,9 +56,9 @@ L_argtnn: Argt
 
 Argt: V Dp TP						{$$ = new_node_str($3->type, ($1->key).c, $3, NULL, NULL);}
 
-TP: T_boo							{$$ = new_node_str(T_BOOL, ($1->key).c, NULL, NULL, NULL);}
-	| T_int							{$$ = new_node_str(T_INT, ($1->key).c, NULL, NULL, NULL);}
-	| Ta TP							{$$ = new_node_str(T_ARRAY, ($1->key).c, $2, NULL, NULL);}
+TP: T_boo							{$$ = new_node_str(T_boo, ($1->key).c, NULL, NULL, NULL);}
+	| T_int							{$$ = new_node_str(T_int, ($1->key).c, NULL, NULL, NULL);}
+	| Ta TP							{$$ = new_node_str(T_array, ($1->key).c, $2, NULL, NULL);}
 
 L_vart: %empty
 		| L_vartnn
