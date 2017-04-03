@@ -51,8 +51,8 @@ L_argsnn: E				{$$ = $1;}
 L_argt: %empty
 		| L_argtnn
 
-L_argtnn: Argt					
-		| L_argtnn Vg Argt		
+L_argtnn: Argt
+		| L_argtnn Vg Argt
 
 Argt: V Dp TP						{$$ = new_node_str($3->type, ($1->key).c, $3, NULL, NULL);}
 
@@ -94,5 +94,8 @@ int main(int argc, char *argv[]){
 	node_print(first_node);
 	node_exec(glob_env , first_node);
 	env_print(glob_env);
+
+	PPtoC3A(glob_env, first_node);
+
 	return 0;
 }

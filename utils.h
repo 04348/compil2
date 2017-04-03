@@ -110,5 +110,9 @@ int yyparse();
 
 int fileno();
 
+char* PPtoC3A(environment* env, node* n);
+
+
+
 extern node* first_node;
 extern FILE *out;
