@@ -362,8 +362,6 @@ char* PPtoC3A(environment* env, node* n){
 			return dest;
 			break;
 
-		case
-
 //		### Op Logiques ###
 		case Or:
 			break;
