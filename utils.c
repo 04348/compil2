@@ -257,6 +257,19 @@ void newNodeC3A(int etiq, enum operateur op, char* strOp, char* arg1, char* arg2
 		nCActual = new;
 }
 
+void printTreeIMP(){
+	nodeC3A* n = nCFirst;
+	while (n != NULL) {
+		printf("%s\t\t:", n->etiq);
+		printf("%s\t:", n->ope_s);
+		printf("%s\t\t:", n->arg1);
+		printf("%s\t\t:", n->arg2);
+		printf("%s\n", n->dest);
+
+		n = n->fils;
+	}
+}
+
 
 // newNodeC3A(int etiq, enum operateur op, char* strOp, char* arg1, char* arg2,
 //								 char* dest, nodeC3A* p){
@@ -267,47 +280,55 @@ char* PPtoC3A(environment* env, node* n){
 
 	char* name;
 	switch(n->type){
-		case Se: //;
+		case Se:{ //;
 			PPtoC3A(env, n->l);
 			PPtoC3A(env, n->r);
-			break;
+			break;}
 //		### Variables/Constantes ###
-		case I: //Valeur
+		case I:{ //Valeur
 			name = malloc(32*sizeof(char));
 			sprintf(name, "CT%d", nbVarC3A++);
+
+			char* num = malloc(32*sizeof(char));
+			sprintf(num, "%d", n->key.i);
+
 			newNodeC3A(nbVarC3A++, oAfc, strcopy("Afc")
-										, "itoa(n->key.i)", strcopy("")
+										, strcopy(num), strcopy("")
 										, name, nCActual);
 			return name;
 			break;
-
-		case T_int:
+		}
+		case T_int:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "CT%d", nbVarC3A++);
+
+			char* num = malloc(32*sizeof(char));
+			sprintf(num, "%d", n->key.i);
+
 			newNodeC3A(nbVarC3A++, oAfc, strcopy("Afc")
-										, "itoa(n->key.i)", strcopy("")
+										, strcopy(num), strcopy("")
 										, name, nCActual);
 			return name;
-			break;
+			break;}
 
-		case T_boo: // Booleen
+		case T_boo:{ // Booleen
 			name = malloc(32*sizeof(char));
-			sprintf(name, "BL%d");
+			sprintf(name, "BL%d", nbVarC3A);
+
+			char* num = malloc(32*sizeof(char));
+			sprintf(num, "%d", n->key.i);
 
 			newNodeC3A(nbVarC3A++, oAfc, strcopy("Afc")
-									, "itoa(n->key.i)", strcopy("")
+									, strcopy(num), strcopy("")
 									, name, nCActual);
 			return name;
-			break;
+			break;}
 
-		case V: // Identificateur
+		case V:{ // Identificateur
 			//Retourne le nom de la variable.
 			name = strcopy(n->key.c);
 			return name;
-			break;
-
-		case V_array:
-			break;
+			break;}
 
 //		### Affectation ###
 		case Af:{
@@ -320,8 +341,8 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
-		case Na:
-			break;
+		case Na:{
+			break;}
 
 // 		### Opérations Math ###
 		/* + */
@@ -391,7 +412,7 @@ char* PPtoC3A(environment* env, node* n){
 
 			break;
 
-		case Eq: // pas fini.
+		case Eq:{ // pas fini.
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
 
@@ -402,18 +423,18 @@ char* PPtoC3A(environment* env, node* n){
 
 			/*newNodeC3A(nbVarC3A++, oJz, );*/
 			return name;
-			break;
+			break;}
 
-		case Not:
+		case Not:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
 			newNodeC3A(nbVarC3A++, oNot, strcopy("Not")
 									,	PPtoC3A(env, n->l), PPtoC3A(env, n->r)
 									, name, nCActual);
 			return name;
-			break;
+			break;}
 
-		case Or:
+		case Or:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
 			newNodeC3A(nbVarC3A++, oOr, strcopy("Or")
@@ -421,9 +442,9 @@ char* PPtoC3A(environment* env, node* n){
 									, name, nCActual);
 
 		  return name;
-			break;
+			break;}
 
-		case And:
+		case And:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
 			newNodeC3A(nbVarC3A++, oAnd, strcopy("And")
@@ -431,7 +452,7 @@ char* PPtoC3A(environment* env, node* n){
 									, name, nCActual);
 
 		  return name;
-			break;
+			break;}
 
 		case V_array:{
 			name = malloc(32*sizeof(char));
@@ -444,26 +465,16 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
-		default:
+		default:{
 			return strcopy("");
+		}
 
 	}
 	printTreeIMP();
 	return NULL;
 }
 
-void printTreeIMP(){
-	nodeC3A* n = nCFirst;
-	while (n != NULL) {
-		printf("%s\t\t:", n->etiq);
-		printf("%s\t:", n->ope_s);
-		printf("%s\t\t:", n->arg1);
-		printf("%s\t\t:", n->arg2);
-		printf("%s\n", n->dest);
 
-		n = n->fils;
-	}
-}
 
 node* first_node;
 
