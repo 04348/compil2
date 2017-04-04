@@ -257,8 +257,8 @@ void newNodeC3A(int etiq, enum operateur op, char* strOp, char* arg1, char* arg2
 		nCActual = new;
 }
 
-void printTreeIMP(){
-	nodeC3A* n = nCFirst;
+void printTreeIMP(nodeC3A* first){
+	nodeC3A* n = first;
 	while (n != NULL) {
 		printf("%s\t\t:", n->etiq);
 		printf("%s\t:", n->ope_s);
@@ -270,6 +270,11 @@ void printTreeIMP(){
 	}
 }
 
+nodeC3A* beginPPtoC3A(environment* env, node* n){
+	PPtoC3A(env, n);
+	printTreeIMP(nCFirst);
+	return nCFirst;
+}
 
 // newNodeC3A(int etiq, enum operateur op, char* strOp, char* arg1, char* arg2,
 //								 char* dest, nodeC3A* p){
@@ -452,7 +457,8 @@ char* PPtoC3A(environment* env, node* n){
 									, name, nCActual);
 
 		  return name;
-			break;}
+			break;
+		}
 
 		case V_array:{
 			name = malloc(32*sizeof(char));
@@ -470,7 +476,7 @@ char* PPtoC3A(environment* env, node* n){
 		}
 
 	}
-	printTreeIMP();
+	//printTreeIMP(nCFirst);
 	return NULL;
 }
 

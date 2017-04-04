@@ -110,7 +110,7 @@ int yyparse();
 
 int fileno();
 
-char* PPtoC3A(environment* env, node* n);
+char* beginPPtoC3A(environment* env, node* n);
 
 
 
