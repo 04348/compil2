@@ -347,7 +347,8 @@ char* PPtoC3A(environment* env, node* n){
 		}
 
 		case Na:{
-			break;}
+			break;
+		}
 
 // 		### Opérations Math ###
 		/* + */
@@ -425,9 +426,13 @@ char* PPtoC3A(environment* env, node* n){
 										, PPtoC3A(env, n->l), PPtoC3A(env, n->r)
 										, name, nCActual);
 
+			char* dest = malloc(32*sizeof(char)):
+			sprintf(dest, "VA%d", nbVarC3A++);
 
-			/*newNodeC3A(nbVarC3A++, oJz, );*/
-			return name;
+			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
+									, strcopy(name), strcopy("")
+									, strcopy(dest), nCActual);
+			return dest;
 			break;}
 
 		case Not:{
@@ -447,7 +452,8 @@ char* PPtoC3A(environment* env, node* n){
 									, name, nCActual);
 
 		  return name;
-			break;}
+			break;
+		}
 
 		case And:{
 			name = malloc(32*sizeof(char));
