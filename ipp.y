@@ -31,7 +31,7 @@ E: 	E Pl E			{$$ = new_node(Pl, $1, $3, NULL);}
 	| Et			{$$ = $1;}
 
 Et: V Co E Cc		{$$ = new_node(V_array, $1, $3, NULL);} //tableau
-	| Et Co E Cc
+	| Et Co E Cc	{$$ = new_node(V_array, $1, $3, NULL);} //tableau >1D
 
 C: 	C Se C				{$$ = new_node(Se, $1, $3, NULL);}
 	| Et Af E			{$$ = new_node(Af, $1, $3, NULL);}

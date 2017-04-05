@@ -8,8 +8,10 @@
 #include "bison_ipp.h"
 
 FILE *out;
+node* first_node;
 
 char* strcopy(char* str){
+	if (str == NULL) return NULL;
 	int size = strlen(str);
 	char* output = malloc(sizeof(char)*(size+1));
 	for(int i = 0; i < size; ++i) output[i] = str[i];
@@ -485,10 +487,6 @@ char* PPtoC3A(environment* env, node* n){
 	//printTreeIMP(nCFirst);
 	return NULL;
 }
-
-
-
-node* first_node;
 
 node* new_node_str(int type, char* key, node* l, node* r, node* c){
 	node* output = malloc(sizeof(node));

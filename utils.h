@@ -8,6 +8,8 @@
 
 //enum TYPES {T_INT, T_BOOL, T_ARRAY};
 
+extern FILE *out;
+
 typedef struct s_node node;
 
 struct s_node{
@@ -71,6 +73,8 @@ struct nodeC3A{
 		nodeC3A* fils;
 };
 
+extern node* first_node;
+
 /*
  *	Creer une node d'arbre de syntaxe abstrait.
  */
@@ -110,9 +114,6 @@ int yyparse();
 
 int fileno();
 
-char* beginPPtoC3A(environment* env, node* n);
+nodeC3A* beginPPtoC3A(environment* env, node* n);
 
-
-
-extern node* first_node;
-extern FILE *out;
+char* PPtoC3A(environment* env, node* n);
