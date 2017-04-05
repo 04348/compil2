@@ -10,6 +10,7 @@
 FILE *out;
 
 char* strcopy(char* str){
+	if (str == NULL) return NULL;
 	int size = strlen(str);
 	char* output = malloc(sizeof(char)*(size+1));
 	for(int i = 0; i < size; ++i) output[i] = str[i];
