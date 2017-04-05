@@ -9,6 +9,7 @@
 //enum TYPES {T_INT, T_BOOL, T_ARRAY};
 
 typedef struct s_node node;
+
 struct s_node{
 		int type;
 		union {
@@ -51,6 +52,25 @@ struct s_func_env{
 		int size;
 };
 
+enum operateur{oPl, oMo, oMu, oAnd, oOr, oInd, oNot, oAf, oAfc,
+                oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
+
+typedef struct nodeC3A nodeC3A;
+
+struct nodeC3A{
+		char* etiq; // Nom de l'étiquette
+
+		enum operateur ope_i; // Opérateur de l'opération actuelle
+		char* ope_s; // Nom de l'opérateur
+
+		char* arg1; // Premier argument
+		char* arg2; // Second argument
+		char* dest; // Nom de la destination
+
+		// le fils éventuel de cette nodeC3A (la ligne suivante)
+		nodeC3A* fils;
+};
+
 /*
  *	Creer une node d'arbre de syntaxe abstrait.
  */
@@ -89,6 +109,10 @@ int yyerror(char *s);
 int yyparse();
 
 int fileno();
+
+char* beginPPtoC3A(environment* env, node* n);
+
+
 
 extern node* first_node;
 extern FILE *out;
