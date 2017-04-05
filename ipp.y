@@ -54,17 +54,17 @@ L_argt: %empty
 L_argtnn: Argt
 		| L_argtnn Vg Argt
 
-Argt: V Dp TP						{$$ = new_node_str($3->type, "($1->key).c", $3, NULL, NULL);}
+Argt: V Dp TP						{$$ = new_node_str($3->type, ($1->key).c, $3, NULL, NULL);}
 
-TP: T_boo							{$$ = new_node_str(T_boo, "($1->key).c", NULL, NULL, NULL);}
-	| T_int							{$$ = new_node_str(T_int, "($1->key).c", NULL, NULL, NULL);}
-	| Ta TP							{$$ = new_node_str(T_array, "($1->key).c", $2, NULL, NULL);}
+TP: T_boo							{$$ = new_node_str(T_boo, ($1->key).c, NULL, NULL, NULL);}
+	| T_int							{$$ = new_node_str(T_int, ($1->key).c, NULL, NULL, NULL);}
+	| Ta TP							{$$ = new_node_str(T_array, ($1->key).c, $2, NULL, NULL);}
 
 L_vart: %empty
 		| L_vartnn
 
-L_vartnn: Var Argt					{new_var(glob_env, "($2->key).c", $2->type, 0);}
-		| L_vartnn Vg Var Argt		{new_var(glob_env, "($4->key).c", $4->type, 0);}
+L_vartnn: Var Argt					{new_var(glob_env, ($2->key).c, $2->type, 0);}
+		| L_vartnn Vg Var Argt		{new_var(glob_env, ($4->key).c, $4->type, 0);}
 
 D_entp: Dep NPro Po L_argt Pc
 
