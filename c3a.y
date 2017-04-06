@@ -21,13 +21,6 @@
 	int nbArray = 0; // Nb de tableaux de variables
 	int nbVarArray[256]; // Nb de variables dans chaque tableau
 
-	typedef struct heap heap;
-	typedef struct heap {
-		char* name;
-		int value;
-		heap* next;
-	} heap;
-
 	enum operateur{oPl, oMo, oMu, oAnd, oOr, oInd, oNot, oAf, oAfc,
 			oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
 
@@ -46,10 +39,26 @@
 		nodeC3A* fils;
 	} nodeC3A;
 
+	typedef struct heap heap;
+	typedef struct heap {
+		char* name;
+		int value;
+		heap* next;
+	} heap;
+	
+	typedef struct environment environment;
+	typedef struct environment {
+		heap* first;
+		environment* old;
+	}
+	environment;
+
 	nodeC3A* nCFirst = NULL;
 	nodeC3A* nCActual = NULL;
 
-	heap* environment = NULL;
+	environment* env_global = NULL;
+	environment* env_local = NULL;
+	environment* env_param = NULL;
 
 	char* copynew(char* str);
 	void proceedTree(nodeC3A* n);
@@ -126,11 +135,12 @@ int new_var_tmp(char* str) {
 	return nbVarTmp++;
 }
 
-heap* new_var_env(heap* environment, char* str) {
+heap* new_var_env(environment* env, char* str) {
 	heap* new = malloc(sizeof(heap));
 	new->name = strdup(str);
 	new->value = 0;
-	new->next = environment;
+	new->next = env->first;
+	env->first = new;
 	return new;
 }
 
@@ -146,13 +156,14 @@ int find_var_tmp(char* s) {
 	return -1;
 }
 
-heap* find_var_env(heap* environment, char* s) {
-	heap* h = environment;
+heap* find_var_env(environment* env, char* s) {
+	if (env == NULL)	return NULL;
+	heap* h = env->first;
 	while (h != NULL) {
 		if (strcmp(s, h->name) == 0)	return h;
 		h = h->next;
 	}
-	return new_var_env(environment, s);
+	return NULL;
 }
 
 int get_value(char* str){
@@ -165,11 +176,13 @@ int get_value(char* str){
 	return 0;
 }
 
-int get_value_env(heap* environment, char* str){
+int get_value_env(environment* env, char* str){
 	if (isdigit(str[0]))	return atoi(str);
-	heap* h = find_var_env(environment, str);
-	if (h != NULL)	return h->value;
-	return 0;
+	heap* h = find_var_env(env_param, str);
+	if (h == NULL)	h = find_var_env(env_local, str);
+	if (h == NULL)	h = find_var_env(env_global, str);
+	if (h == NULL)	h = new_var_env(env, str);
+	return h->value;
 }
 
 int find_var_array1(char* Arg1){
@@ -226,52 +239,52 @@ void proceedTree(nodeC3A* racine){
 		switch(actuel->ope_i) {
 		case (oPl) : // Pl - Proceeds the addition
 			{
-				int v1 = get_value(actuel->arg1);
-				int v2 = get_value(actuel->arg2);
+				int v1 = get_value_env(env_local, actuel->arg1);
+				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_tmp[index] = v1 + v2;
+				heap* h = find_var_env(env_local, actuel->dest);
+				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
+				h->value = v1 + v2;
 				break;
 			}
 		case (oMo) : // Mo - proceeds the substraction
 			{
-				int v1 = get_value(actuel->arg1);
-				int v2 = get_value(actuel->arg2);
+				int v1 = get_value_env(env_local, actuel->arg1);
+				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_tmp[index] = v1 - v2;
+				heap* h = find_var_env(env_local, actuel->dest);
+				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
+				h->value = v1 - v2;
 				break;
 			}
 		case (oMu) : // Mu - proceeds the multiplication
 			{
-				int v1 = get_value(actuel->arg1);
-				int v2 = get_value(actuel->arg2);
+				int v1 = get_value_env(env_local, actuel->arg1);
+				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_tmp[index] = v1 * v2;
+				heap* h = find_var_env(env_local, actuel->dest);
+				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
+				h->value = v1 * v2;
 				break;
 			}
 		case (oAnd) : // And - proceeds the conjonction
 			{
-				int v1 = get_value(actuel->arg1);
-				int v2 = get_value(actuel->arg2);
+				int v1 = get_value_env(env_local, actuel->arg1);
+				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_tmp[index] = v1 && v2;
+				heap* h = find_var_env(env_local, actuel->dest);
+				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
+				h->value = v1 && v2;
 				break;
 			}
 		case (oOr) : // Or - proceeds the disjonction
 			{
-				int v1 = get_value(actuel->arg1);
-				int v2 = get_value(actuel->arg2);
+				int v1 = get_value_env(env_local, actuel->arg1);
+				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_tmp[index] = v1 || v2;
+				heap* h = find_var_env(env_local, actuel->dest);
+				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
+				h->value = v1 || v2;
 				break;
 			}
 		case (oInd) : // Ind - get a value from a 2D array
@@ -279,28 +292,26 @@ void proceedTree(nodeC3A* racine){
 				char* Arg1 = actuel->arg1;
 				char* Arg2 = actuel->arg2;
 				
-				int value = get_value_array(Arg1, Arg2);
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_tmp[index] = value;
+				int value = get_value_array_env(Arg1, Arg2);
+				heap* h = find_var_env(env_local, actuel->dest);
+				h->value = value;
 				break;
 			}
-		case (oNot) : // And - proceeds the negation
+		case (oNot) : // Not - proceeds the negation
 			{
-				int value = get_value(actuel->arg1);
+				int value = get_value_env(env_local, actuel->arg1);
 				
-				int index = find_var_tmp(actuel->dest);
-				if (index == -1)	index = new_var_tmp(actuel->dest);
+				heap* h = find_var_env(env_local, actuel->dest);
 
-				if (value == 0)	val_tmp[index] = 1;
-				else	val_tmp[index] = 0;
+				if (value == 0)	h->value = 1;
+				else	h->value = 0;
 				break;
 			}
 		case (oAf) : // Af
 			{
-				int value = get_value(actuel->arg2);
+				int value = get_value_env(actuel->arg2);
 				
-				int index = find_var(actuel->arg1);
+				heap* h = find_var_env(actuel->arg1);
 				if(index == -1) {
 					index = new_var(actuel->arg1);
 				}
