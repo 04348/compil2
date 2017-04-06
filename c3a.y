@@ -21,6 +21,13 @@
 	int nbArray = 0; // Nb de tableaux de variables
 	int nbVarArray[256]; // Nb de variables dans chaque tableau
 
+	typedef struct heap heap;
+	typedef struct heap {
+		char* name;
+		int value;
+		heap* next;
+	} heap;
+
 	enum operateur{oPl, oMo, oMu, oAnd, oOr, oInd, oNot, oAf, oAfc,
 			oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
 
@@ -39,8 +46,10 @@
 		nodeC3A* fils;
 	} nodeC3A;
 
-        nodeC3A* nCFirst = NULL;
-        nodeC3A* nCActual = NULL;
+	nodeC3A* nCFirst = NULL;
+	nodeC3A* nCActual = NULL;
+
+	heap* environment = NULL;
 
 	char* copynew(char* str);
 	void proceedTree(nodeC3A* n);
@@ -104,17 +113,6 @@ DEST: V NLINE ETI	{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = $3;}
 	;
 
 %%
-int find_var(char* s) {
-	for (int i = 0 ; i < nbVar ; i++)
-		if (strcmp(s, var[i]) == 0)	return i;
-	return -1;
-}
-
-int find_var_tmp(char* s) {
-	for (int i = 0 ; i < nbVarTmp ; i++)
-		if (strcmp(s, var_tmp[i]) == 0)	return i;
-	return -1;
-}
 
 int new_var(char* str) {
 	val[nbVar] = 0;
@@ -128,6 +126,35 @@ int new_var_tmp(char* str) {
 	return nbVarTmp++;
 }
 
+heap* new_var_env(heap* environment, char* str) {
+	heap* new = malloc(sizeof(heap));
+	new->name = strdup(str);
+	new->value = 0;
+	new->next = environment;
+	return new;
+}
+
+int find_var(char* s) {
+	for (int i = 0 ; i < nbVar ; i++)
+		if (strcmp(s, var[i]) == 0)	return i;
+	return -1;
+}
+
+int find_var_tmp(char* s) {
+	for (int i = 0 ; i < nbVarTmp ; i++)
+		if (strcmp(s, var_tmp[i]) == 0)	return i;
+	return -1;
+}
+
+heap* find_var_env(heap* environment, char* s) {
+	heap* h = environment;
+	while (h != NULL) {
+		if (strcmp(s, h->name) == 0)	return h;
+		h = h->next;
+	}
+	return new_var_env(environment, s);
+}
+
 int get_value(char* str){
 	if (isdigit(str[0]))	return atoi(str);
 	int index = find_var(str);
@@ -138,23 +165,11 @@ int get_value(char* str){
 	return 0;
 }
 
-int get_value_array(char* Arg1, char* Arg2){
-
-	// Trouver le tableau d'Arg1
-	int indexArr = -1; // indexArray
-	for (int i = 0 ; i < nbArray ; i++)
-		if (strcmp(Arg1, var_array[i][0]) == 0)	{indexArr = i; break;}
-
-	if (indexArr == -1) return -1;
-
-	// Maintenant, trouver la valeur correspondant à Arg2
-	int indexVar = 0;
-	for (int i = 1 ; i < nbVarArray[indexArr]+1 ; i++)
-		if (strcmp(Arg2, var_array[indexArr][i]) == 0)	{indexVar = i; break;}
-
-	if (indexVar == 0) return -1;
-	
-	return val_array[indexArr][indexVar];
+int get_value_env(heap* environment, char* str){
+	if (isdigit(str[0]))	return atoi(str);
+	heap* h = find_var_env(environment, str);
+	if (h != NULL)	return h->value;
+	return 0;
 }
 
 int find_var_array1(char* Arg1){
@@ -171,6 +186,33 @@ int find_var_array2(int index1, char* Arg2){
 	for (int i = 1 ; i < nbVarArray[index1]+1 ; i++)
 		if (strcmp(Arg2, var_array[index1][i]) == 0)	{return i;}
 	return -1;
+}
+
+int new_var_array1(char* Arg1){
+	val_array[nbArray][0] = 0;
+	strcpy(var_array[nbArray][0], Arg1);
+	nbVarArray[nbArray] = 0;
+	return nbArray++;
+}
+
+int new_var_array2(int index1, char* Arg2){
+	nbVarArray[index1]++;
+	val_array[index1][nbVarArray[index1]] = 0;
+	strcpy(var_array[index1][nbVarArray[index1]+1], Arg2);
+	return nbVarArray[index1];
+}
+
+int get_value_array(char* Arg1, char* Arg2){
+
+	// Trouver le tableau d'Arg1
+	int indexArr = find_var_array1(Arg1);
+	if (indexArr == -1) indexArr = new_var_array1(Arg1);
+
+	// Maintenant, trouver la valeur correspondant à Arg2
+	int indexVar = find_var_array2(indexArr, Arg2);
+	if (indexVar == -1) indexVar = new_var_array2(indexArr, Arg2);
+	
+	return val_array[indexArr][indexVar];
 }
 
 void proceedTree(nodeC3A* racine){
@@ -278,9 +320,12 @@ void proceedTree(nodeC3A* racine){
 				char* Arg1 = actuel->arg1;
 				char* Arg2 = actuel->arg2;
 				int index1 = find_var_array1(Arg1);
+				if (index1 == -1)	index1 = new_var_array1(Arg1);
 				int index2 = find_var_array2(index1, Arg2);
+				if (index2 == -1)	index2 = new_var_array2(index1, Arg2);
 				
 				int index = find_var_tmp(actuel->dest);
+				if (index == -1)	index = new_var_tmp(actuel->dest);
 				val_array[index1][index2] = val_tmp[index];
 				break;
 			}
@@ -314,6 +359,12 @@ void proceedTree(nodeC3A* racine){
 				for (int i = 0 ; i < nbVar ; i++)
 					printf("(%s : %d) ", var[i], val[i]);
 				printf("\n");
+				for (int i = 0 ; i < nbArray ; i++) {
+					printf("Array %s: {", var_array[i][0]);
+					for (int j = 1 ; j < nbVarArray[i]+1 ; j++)
+						printf("(%s : %d) ", var_array[i][j], val_array[i][j]);
+					printf("}\n");
+				}
 				return;
 			}
 		case (oParam) : // Param
