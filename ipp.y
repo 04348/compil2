@@ -2,7 +2,7 @@
 	#include "utils.h"
 
 	extern FILE *yyin;
-	
+
 %}
 
 %define api.value.type {node*}
@@ -92,13 +92,14 @@ int main(int argc, char *argv[]){
 	glob_env = new_env();
 	functions = new_env_func();
 	yyparse();
+	
 	env_print(glob_env);
 	func_print(functions);
 	node_print(first_node);
 	node_exec(glob_env , first_node);
 	env_print(glob_env);
 
-	PPtoC3A(glob_env, first_node);
+	beginPPtoC3A(glob_env, first_node);
 
 	return 0;
 }

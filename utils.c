@@ -280,14 +280,14 @@ environment* merge_env(environment* e1, environment* e2){
 }
 
 void setup_fun_env(environment* env, environment* fenv, node* c, node* d){
-	if(c == NULL || d == NULL) return; 
+	if(c == NULL || d == NULL) return;
 	if(c->type == Carg && d->type == Darg){
 		setup_fun_env(env, fenv, c->l, d->l);
 		setup_fun_env(env, fenv, c->r, d->r);
 	} else if (d->type == Arg) {
 		new_var(fenv, (d->l)->key.c, (d->r)->key.i, ret_val(env, c));
 	}
-	return;	
+	return;
 }
 
 void* node_exec(environment* env, node* n){
@@ -337,7 +337,7 @@ void* node_exec(environment* env, node* n){
 			} else if((n->r)->type == V_array) { //Affectation de la valeur d'un tableau'
 				env_var* var = (env_var*)node_exec(env, n->r);
 				if(var->type == V_array || var->type == T_array){
-					
+
 					if(cvar->type != T_array){
 						printf("Erreur de Typage : %s af %s\n", getToken(cvar->type), getToken(var->type));
 						exit(0);
@@ -420,26 +420,26 @@ void* node_exec(environment* env, node* n){
 			break;
 		}
 		case Lw:{
-			return (void*)( 
+			return (void*)(
 				(intptr_t)(ret_val(env, n->l))<(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
 				);
 			break;
 		}
 		case Lt:{
-			return (void*)( 
+			return (void*)(
 				(intptr_t)(ret_val(env, n->l))<=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
 				);
 			break;
 		}
 		case Gr:{
-			return (void*)( 
+			return (void*)(
 				(intptr_t)(ret_val(env, n->l))>(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
 				);
 			break;
 		}
 		case Gt:{
-			return (void*)( 
-				(intptr_t)(ret_val(env, n->l))>=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1 
+			return (void*)(
+				(intptr_t)(ret_val(env, n->l))>=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
 				);
 			break;
 		}
@@ -534,7 +534,8 @@ char* PPtoC3A(environment* env, node* n){
 										, strcopy(num), strcopy("")
 										, name, nCActual);
 			return name;
-			break;}
+			break;
+		}
 
 		case T_boo:{ // Booleen
 			name = malloc(32*sizeof(char));
@@ -547,7 +548,8 @@ char* PPtoC3A(environment* env, node* n){
 									, strcopy(num), strcopy("")
 									, name, nCActual);
 			return name;
-			break;}
+			break;
+		}
 
 		case V:{ // Identificateur
 			//Retourne le nom de la variable.
@@ -566,8 +568,9 @@ char* PPtoC3A(environment* env, node* n){
 			// On fait une affectation à une adr array
 			if(n->l->type == V_array){
 				cmd = "AfInd";
+				char* dest = PPtoC3A(env, (n->l)->r);
 				newNodeC3A(nbVarC3A++, oAfInd, strcopy(cmd)
-										, PPtoC3A(env, (n->l)->l), PPtoC3A(env, (n->l)->r)
+										, PPtoC3A(env, (n->l)->l), dest
 										, right, nCActual);
 			  //return right;
 
