@@ -1,19 +1,12 @@
 var X1 : integer,
+var B1 : boolean,
 var X2 : integer
 
-defpro proo(X : integer, Y : boolean)
-    var Z : integer, var U : integer
-    X1:= X+1
-    
-defun foo(X : integer, Y : boolean):integer
+
+defpro prot(X : integer, Y : boolean)
     var T : integer, var U : integer
-    T := 20;
-    if Y
-       then foo := X + T
-       else foo := X - T
+    X1 := X * 2
 
 X2 := 10;
-if true
-   then proo(X2,true)
-   else X1 := fo1(X2,false)
+prot(15, B1)
 

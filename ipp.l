@@ -32,6 +32,9 @@ and			{return(And);}
 or			{return(Or);}
 not			{return(Not);}
 \<=			{return(Lt);}
+\>=			{return(Gt);}
+\<			{return(Lw);}
+\>			{return(Gr);}
 =			{return(Eq);}
 new[ ]+array[ ]+of 	{return(Na);}
 array[ ]+of			{return(Ta);}
@@ -90,5 +93,8 @@ array[ ]+of			{printf("%s\n", yytext);return(Ta);}
 
 {i}		{printf("%s\n", yytext);yylval = new_node_val(T_INT, 0, NULL, NULL, NULL); return(I);}
 {v}		{printf("%s\n", yytext);yylval = new_node_str(10, yytext, NULL, NULL, NULL); return(V);}
+
+
+###########################################
 
 */

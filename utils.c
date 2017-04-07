@@ -9,6 +9,8 @@
 
 FILE *out;
 node* first_node;
+environment_func *functions;
+environment *glob_env;
 
 char* strcopy(char* str){
 	if (str == NULL) return NULL;
@@ -33,13 +35,24 @@ void new_var(environment* env, char* id, int type, int val){
 	env_add(env, var);
 }
 
-void new_func(environment_func* env, char* id, node* args, node* prog){
+void new_func(environment_func* envf, char* id, node* args, node* nenv, node* prog){
 	env_func* func = malloc(sizeof(env_func));
 	func->id = strcopy(id);
 	func->args = args;
 	func->prog = prog;
-	func->env = new_env();
-	//env_func_add(env, func);
+	func->type = Cfun;
+	func->nenv = nenv;
+	env_func_add(envf, func);
+}
+
+void new_prot(environment_func* envf, char* id, node* args, node* nenv, node* prog){
+	env_func* func = malloc(sizeof(env_func));
+	func->id = strcopy(id);
+	func->args = args;
+	func->prog = prog;
+	func->type = Cpro;
+	func->nenv = nenv;
+	env_func_add(envf, func);
 }
 
 environment* new_env(){
@@ -48,6 +61,16 @@ environment* new_env(){
 	env->size = INITIAL_ENV_SIZE;
 	env->vars = malloc(sizeof(env_var*)*INITIAL_ENV_SIZE);
 	return env;
+}
+
+void setup_env(environment* env, node* n){
+	if(n==NULL) return;
+	if(n->type == Ev){
+		setup_env(env, n->l);
+		setup_env(env, n->r);
+	} else if (n->type == Arg){
+		new_var(env, (n->l)->key.c, (n->r)->key.i, 0);
+	}
 }
 
 environment_func* new_env_func(){
@@ -71,11 +94,27 @@ int var_geti(environment* env, char* id){
 	for(int i = 0; i < env->nb_var; ++i){
 		if(strcmp(env->vars[i]->id, id) == 0) return i;
 	}
-	printf("Var not found\n");
+	printf("Variable %s n'existe pas.\n", id);
 	return -1;
 }
 
-void env_func_add(environment_func* env, env_func* func);
+env_func* getFunc(environment_func* env, char* id){
+	for(int i = 0; i < env->nb_func; ++i){
+		if(strcmp(env->funcs[i]->id, id) == 0) return env->funcs[i];
+	}
+	printf("Fonction %s n'existe pas.\n", id);
+	exit(0);
+}
+
+void env_func_add(environment_func* env, env_func* func){
+	if (env->nb_func >= env->size-1){
+		env->size *= 2;
+		env->funcs = realloc(env->funcs, sizeof(env_var*)*env->size);
+	}
+	env->funcs[env->nb_func] = func;
+	++(env->nb_func);
+}
+
 char* getToken(int tk){
 	if (tk == T_boo) return "T_boo";
 	if (tk == T_int) return "T_int";
@@ -100,7 +139,10 @@ char* getToken(int tk){
 	if (tk == And) return "And";
 	if (tk == Or) return "Or";
 	if (tk == Not) return "Not";
-	if (tk == Lt) return "Lt";
+	if (tk == Lt) return "<=";
+	if (tk == Gt) return ">=";
+	if (tk == Lw) return "<";
+	if (tk == Gr) return ">";
 	if (tk == Eq) return "Eq";
 	if (tk == V) return "V";
 	if (tk == I) return "I";
@@ -114,7 +156,25 @@ char* getToken(int tk){
 	if (tk == Ac) return "Ac";
 	if (tk == Dp) return "Dp";
 	if (tk == Vg) return "Vg";
+	if (tk == Fp) return "Fp";
+	if (tk == Arg) return "Arg";
+	if (tk == Carg) return "Carg";
+	if (tk == Darg) return "Darg";
+	if (tk == Type) return "Type";
+	if (tk == Ev) return "Ev";
 	return "UNKNOW_TOKEN";
+}
+
+void var_print_v(env_var* var){
+	if (var->type != T_array){
+			printf("%d,", var->val);
+	} else {
+		printf("[");
+		for(int i = 0; i < var->size; ++i){
+			var_print_v((var->arr[i]));
+		}
+		printf("]");
+	}
 }
 
 void var_print(env_var* var){
@@ -124,9 +184,19 @@ void var_print(env_var* var){
 	} else {
 		printf("[");
 		for(int i = 0; i < var->size; ++i){
-			printf("%d,", (var->arr[i])->val);
+			var_print_v((var->arr[i]));
 		}
 		printf("]");
+	}
+}
+
+void arg_print(node* n){
+	if(n == NULL) return;
+	if(n->type == Darg){
+		arg_print(n->l);
+		arg_print(n->r);
+	} else {
+		printf("%s:%s, ", (n->l)->key.c, getToken((n->r)->key.i));
 	}
 }
 
@@ -138,6 +208,19 @@ void env_print(environment* env){
 	}
 }
 
+void func_print(environment_func* env){
+	printf("### Fonctions ###\n");
+	for(int i = 0; i < env->nb_func; ++i){
+		//var_print(env->vars[i]);
+		printf("%s : ", (env->funcs[i])->id);
+		arg_print( (env->funcs[i])->args );
+		printf("\n");
+		node_print_rec((env->funcs[i])->prog);
+		printf("\n\n");
+	}
+}
+
+
 void node_print_rec(node* n){
 	if (n->l != NULL) {
 		if (n->type != Se)printf("(");
@@ -147,7 +230,15 @@ void node_print_rec(node* n){
 	if (n->type == I){printf("%d", n->key.i);}
 	else if (n->type == V){printf("%s", n->key.c);}
 	else if (n->type == T_boo){printf("%s", n->key.c==0?"TRUE":"FALSE");}
-	else printf("%s", getToken(n->type));
+	else if (n->type == If){
+		printf("(If(");
+		node_print_rec(n->condition);
+		printf(")");
+	} else if (n->type == Wh){
+		printf("Wh(");
+		node_print_rec(n->condition);
+		printf(")");
+	} else printf("%s", getToken(n->type));
 
 	if (n->r != NULL) {
 		if (n->type != Se)printf("(");
@@ -162,8 +253,46 @@ void node_print(node* n){
 	printf("\n");
 }
 
+int ret_val(environment* env, node* n){
+	if (n == NULL) return -1;
+	if(n->type == V){
+		return ((env_var*)(node_exec(env, n)))->val;
+	} else {
+		return (intptr_t)(node_exec(env, n));
+	}
+}
+
+environment* merge_env(environment* e1, environment* e2){
+	environment* e = new_env();
+	e->size = e1->size + e2->size;
+	e->vars = malloc(sizeof(env_var*)*e->size);
+	int nb_var = 0;
+	for(int i = 0; i < e1->nb_var; ++i){
+		e->vars[nb_var] = e1->vars[i];
+		nb_var++;
+	}
+	for(int i = 0; i < e2->nb_var; ++i){
+		e->vars[nb_var] = e2->vars[i];
+		nb_var++;
+	}
+	e->nb_var = nb_var;
+	return e;
+}
+
+void setup_fun_env(environment* env, environment* fenv, node* c, node* d){
+	if(c == NULL || d == NULL) return; 
+	if(c->type == Carg && d->type == Darg){
+		setup_fun_env(env, fenv, c->l, d->l);
+		setup_fun_env(env, fenv, c->r, d->r);
+	} else if (d->type == Arg) {
+		new_var(fenv, (d->l)->key.c, (d->r)->key.i, ret_val(env, c));
+	}
+	return;	
+}
+
 void* node_exec(environment* env, node* n){
 	if(n==NULL) return (void*)-1;
+	//printf("%s\n", getToken(n->type));
 	switch(n->type){
 		case Se:{
 			node_exec(env, n->l);
@@ -184,30 +313,95 @@ void* node_exec(environment* env, node* n){
 			break;
 		}
 		case V_array:{
-			int index = (intptr_t)(node_exec(env, n->r));
-			return (void*)( (env->vars[var_geti(env, (n->l)->key.c)])->arr[index] );
+			int index = ret_val(env, n->r);
+			env_var* var = (env_var*)node_exec(env, n->l);
+			if(var->size <= index){
+				printf("Erreur de segmentation, %s[%d] (DIM:%d)\n", var->id, index, var->size);
+				exit(0);
+			}
+			return (void*)( var->arr[index] );
 			break;
 		}
 //		### Affectation ###
 		case Af:{
 			env_var* cvar = (env_var*)node_exec(env, n->l);
 
-			if((n->r)->type == V) {
-				cvar->val = ((env_var*)(node_exec(env, n->r)))->val;
-			} else if((n->r)->type == Na) {
+			if((n->r)->type == Na) { //Affectation d'un nouveau tableau'
 				cvar->size = (intptr_t)(node_exec(env, n->r));
 				cvar->arr = malloc(sizeof(env_var*)*cvar->size);
+				cvar->type = T_array;
 				for(int i = 0; i < cvar->size; ++i){
 					cvar->arr[i] = malloc(sizeof(env_var));
 					(cvar->arr[i])->val = 0;
 				}
-			} else {
-				cvar->val = (intptr_t)(node_exec(env, n->r));
+			} else if((n->r)->type == V_array) { //Affectation de la valeur d'un tableau'
+				env_var* var = (env_var*)node_exec(env, n->r);
+				if(var->type == V_array || var->type == T_array){
+					
+					if(cvar->type != T_array){
+						printf("Erreur de Typage : %s af %s\n", getToken(cvar->type), getToken(var->type));
+						exit(0);
+					}
+					cvar->arr = var->arr;
+					cvar->size = var->size;
+				} else {
+					cvar->val = var->val;
+				}
+			} else { //Affectation de valeur
+				cvar->val = ret_val(env, n->r);
 			}
 			break;
 		}
 		case Na:{
+			node_exec(env, n->l);
 			return (void*)node_exec(env, n->r);
+			break;
+		}
+//		### Boucles & Conditions ###
+		case If:{
+			if(ret_val(env, n->condition) == 0){
+				node_exec(env, n->l);
+			} else {
+				node_exec(env, n->r);
+			}
+			break;
+		}
+		case Wh:{
+			while(ret_val(env, n->condition) == 0){
+				node_exec(env, n->l);
+			}
+			break;
+		}
+		case Fp:{
+			env_func* f = getFunc(functions, (n->l)->key.c);
+			if(f->type == Cfun){ //Fonction
+				environment* fenv = new_env();
+				new_var(fenv, (n->l)->key.c, T_int, 0);
+				setup_env(fenv, f->nenv);
+				setup_fun_env(env, fenv, n->r, f->args);
+				env_print(fenv);
+				node_exec(fenv, f->prog);
+				return (void*)( (intptr_t)(fenv->vars[var_geti(fenv, (n->l)->key.c)])->val);
+			} else { //Protocole
+				environment* fenv = new_env();
+				setup_env(fenv, f->nenv);
+				setup_fun_env(env, fenv, n->r, f->args);
+				env_print(fenv);
+				node_exec(merge_env(fenv, glob_env), f->prog);
+			}
+			break;
+		}
+//		### Op Arithmetiques ###
+		case Mo:{
+			return (void*)( (intptr_t)(ret_val(env, n->l) - ret_val(env, n->r)) );
+			break;
+		}
+		case Pl:{
+			return (void*)( (intptr_t)(ret_val(env, n->l) + ret_val(env, n->r)) );
+			break;
+		}
+		case Mu:{
+			return (void*)( (intptr_t)(ret_val(env, n->l) * ret_val(env, n->r)) );
 			break;
 		}
 //		### Op Logiques ###
@@ -223,6 +417,30 @@ void* node_exec(environment* env, node* n){
 		}
 		case And:{
 			return (void*)( (intptr_t)(node_exec(env, n->l))&(intptr_t)(node_exec(env, n->r)) );
+			break;
+		}
+		case Lw:{
+			return (void*)( 
+				(intptr_t)(ret_val(env, n->l))<(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
+				);
+			break;
+		}
+		case Lt:{
+			return (void*)( 
+				(intptr_t)(ret_val(env, n->l))<=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
+				);
+			break;
+		}
+		case Gr:{
+			return (void*)( 
+				(intptr_t)(ret_val(env, n->l))>(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
+				);
+			break;
+		}
+		case Gt:{
+			return (void*)( 
+				(intptr_t)(ret_val(env, n->l))>=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1 
+				);
 			break;
 		}
 

@@ -41,9 +41,11 @@ struct s_env{
 
 typedef struct s_func env_func;
 struct s_func{
+		int type;
 		char* id;
 		node* args;
 		node* prog;
+		node* nenv; //Used to build the env
 		environment* env;
 };
 
@@ -74,6 +76,8 @@ struct nodeC3A{
 };
 
 extern node* first_node;
+extern environment_func *functions;
+extern environment *glob_env;
 
 /*
  *	Creer une node d'arbre de syntaxe abstrait.
@@ -86,7 +90,9 @@ node* new_node(int type, node* l, node* r, node* c);
 
 void new_var(environment* env, char* id, int type, int val);
 
-void new_func(environment_func* env, char* id, node* args, node* prog);
+void new_func(environment_func* envf, char* id, node* args, node* nenv, node* prog);
+
+void new_prot(environment_func* envf, char* id, node* args, node* nenv, node* prog);
 
 environment* new_env();
 
@@ -100,9 +106,17 @@ node* new_node_str(int type, char* key, node* l, node* r, node* c);
 
 node* new_node_val(int type, int key, node* l, node* r, node* c);
 
+void setup_env(environment* env, node* n);
+
+int var_geti(environment* env, char* id);
+
 void node_print(node* n);
 
+void node_print_rec(node* n);
+
 void env_print(environment* env);
+
+void func_print(environment_func* env);
 
 void* node_exec(environment* env, node* n);
 
