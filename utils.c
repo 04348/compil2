@@ -335,16 +335,32 @@ char* PPtoC3A(environment* env, node* n){
 			//Retourne le nom de la variable.
 			name = strcopy(n->key.c);
 			return name;
-			break;}
+			break;
+		}
 
 //		### Affectation ###
 		case Af:{
-			char* tmp = strcopy(PPtoC3A(env, n->r));
-			newNodeC3A(nbVarC3A++, oAf, strcopy("Af")
-								, strcopy(n->l->key.c), tmp,
-								 strcopy(""), nCActual);
+			//char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
 
-			return NULL;
+			char* cmd = malloc(32*sizeof(char));
+
+			// On fait une affectation à une adr array
+			if(n->l->type == V_array){
+				cmd = "AfInd";
+				newNodeC3A(nbVarC3A++, oAfInd, strcopy(cmd)
+										, PPtoC3A(env, (n->l)->l), PPtoC3A(env, (n->l)->r)
+										, right, nCActual);
+			  //return right;
+
+			} else { //On fait une affectation normale..
+				cmd = "Af";
+				newNodeC3A(nbVarC3A++, oAf, strcopy(cmd)
+									, PPtoC3A(env, n->l), right,
+									 strcopy(""), nCActual);
+			}
+
+			return right;
 			break;
 		}
 
@@ -428,7 +444,7 @@ char* PPtoC3A(environment* env, node* n){
 										, PPtoC3A(env, n->l), PPtoC3A(env, n->r)
 										, name, nCActual);
 
-			char* dest = malloc(32*sizeof(char)):
+			char* dest = malloc(32*sizeof(char));
 			sprintf(dest, "VA%d", nbVarC3A++);
 
 			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
@@ -441,10 +457,12 @@ char* PPtoC3A(environment* env, node* n){
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
 			newNodeC3A(nbVarC3A++, oNot, strcopy("Not")
-									,	PPtoC3A(env, n->l), PPtoC3A(env, n->r)
+									,	PPtoC3A(env, n->l), strcopy("")
 									, name, nCActual);
+
 			return name;
-			break;}
+			break;
+		}
 
 		case Or:{
 			name = malloc(32*sizeof(char));
@@ -473,18 +491,21 @@ char* PPtoC3A(environment* env, node* n){
 			sprintf(name, "VA%d", nbVarC3A++);
 
 			 newNodeC3A(nbVarC3A++, oInd, strcopy("Ind")
-		 									,	strcopy(n->key.c), PPtoC3A(env, n->r)
+		 									,	PPtoC3A(env, n->l), PPtoC3A(env, n->r)
 										 	, name, nCActual);
 			return name;
 			break;
 		}
 
 		default:{
+			//fprintf(stderr, "No type found : %s\n", getToken(n->type));
 			return strcopy("");
 		}
 
 	}
 	//printTreeIMP(nCFirst);
+	//fprintf(stderr, "No type found : %s", getToken(n->type));
+
 	return NULL;
 }
 
