@@ -355,9 +355,11 @@ char* PPtoC3A(environment* env, node* n){
 
 			} else { //On fait une affectation normale..
 				cmd = "Af";
-				newNodeC3A(nbVarC3A++, oAf, strcopy(cmd)
-									, PPtoC3A(env, n->l), right,
-									 strcopy(""), nCActual);
+				if(right != NULL ){
+					newNodeC3A(nbVarC3A++, oAf, strcopy(cmd)
+										, PPtoC3A(env, n->l), right,
+										 strcopy(""), nCActual);
+				 }
 			}
 
 			return right;
