@@ -1,0 +1,17 @@
+ET1		:Afc	:2		:		:CT0
+ET2		:Af	:X2		:CT0		:
+ET4		:Afc	:0		:		:CT3
+ET6		:Afc	:1		:		:CT5
+ET8		:Mo	:CT3		:CT5		:VA7
+ET11		:Afc	:2		:		:CT10
+ET12		:Ind	:X4		:CT10		:VA9
+ET14		:Afc	:3		:		:CT13
+ET15		:AfInd	:VA9		:CT13		:VA7
+ET17		:Ind	:X4		:X2		:VA16
+ET18		:Af	:X3		:VA16		:
+ET22		:Afc	:2		:		:CT21
+ET23		:Ind	:X4		:CT21		:VA20
+ET25		:Afc	:3		:		:CT24
+ET26		:Ind	:VA20		:CT24		:VA19
+ET27		:Af	:Z		:VA19		:
+ET28		:St	:		:		:

@@ -492,7 +492,13 @@ void printTreeIMP(nodeC3A* first){
 
 nodeC3A* beginPPtoC3A(environment* env, node* n){
 	PPtoC3A(env, n);
+
+	newNodeC3A(nbVarC3A++, oSt, strcopy("St")
+							, strcopy(""), strcopy("")
+							, strcopy(""), nCActual);
+
 	printTreeIMP(nCFirst);
+
 	return nCFirst;
 }
 
@@ -560,34 +566,31 @@ char* PPtoC3A(environment* env, node* n){
 
 //		### Affectation ###
 		case Af:{
-			//char* left = PPtoC3A(env, n->l);
-			char* right = PPtoC3A(env, n->r);
+			char* right = PPtoC3A(env, n->r);//La valeur qui doit être affecté
 
-			char* cmd = malloc(32*sizeof(char));
+			if(right != NULL){
+				// On fait une affectation à une adr array
+				if(n->l->type == V_array){
+					char* ori = PPtoC3A(env, (n->l)->l);
+					char* ind = PPtoC3A(env, (n->l)->r);//index
+					newNodeC3A(nbVarC3A++, oAfInd, strcopy("AfInd")
+											, ori, ind
+											, right, nCActual);
+				  //return right;
 
-			// On fait une affectation à une adr array
-			if(n->l->type == V_array){
-				cmd = "AfInd";
-				char* dest = PPtoC3A(env, (n->l)->r);
-				newNodeC3A(nbVarC3A++, oAfInd, strcopy(cmd)
-										, PPtoC3A(env, (n->l)->l), dest
-										, right, nCActual);
-			  //return right;
-
-			} else { //On fait une affectation normale..
-				cmd = "Af";
-				if(right != NULL ){
-					newNodeC3A(nbVarC3A++, oAf, strcopy(cmd)
-										, PPtoC3A(env, n->l), right,
-										 strcopy(""), nCActual);
-				 }
+				} else { //On fait une affectation normale..
+						newNodeC3A(nbVarC3A++, oAf, strcopy("Af")
+											, PPtoC3A(env, n->l), right,
+											 strcopy(""), nCActual);
+				}
 			}
 
 			return right;
 			break;
 		}
 
-		case Na:{
+		case Na:{//New array
+			return NULL;
 			break;
 		}
 
@@ -679,8 +682,10 @@ char* PPtoC3A(environment* env, node* n){
 		case Not:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
+			char* left = PPtoC3A(env, n->l);
+
 			newNodeC3A(nbVarC3A++, oNot, strcopy("Not")
-									,	PPtoC3A(env, n->l), strcopy("")
+									,	left, strcopy("")
 									, name, nCActual);
 
 			return name;
@@ -690,8 +695,11 @@ char* PPtoC3A(environment* env, node* n){
 		case Or:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
+
 			newNodeC3A(nbVarC3A++, oOr, strcopy("Or")
-									, PPtoC3A(env, n->l), PPtoC3A(env, n->r)
+									, left, right
 									, name, nCActual);
 
 		  return name;
@@ -701,20 +709,25 @@ char* PPtoC3A(environment* env, node* n){
 		case And:{
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
+
 			newNodeC3A(nbVarC3A++, oAnd, strcopy("And")
-									, PPtoC3A(env, n->l), PPtoC3A(env, n->r)
+									, left, right
 									, name, nCActual);
 
 		  return name;
 			break;
 		}
 
-		case V_array:{
+		case V_array:{//Ind
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
 
-			 newNodeC3A(nbVarC3A++, oInd, strcopy("Ind")
-		 									,	PPtoC3A(env, n->l), PPtoC3A(env, n->r)
+			newNodeC3A(nbVarC3A++, oInd, strcopy("Ind")
+		 									,	left, right
 										 	, name, nCActual);
 			return name;
 			break;
@@ -728,7 +741,6 @@ char* PPtoC3A(environment* env, node* n){
 	}
 	//printTreeIMP(nCFirst);
 	//fprintf(stderr, "No type found : %s", getToken(n->type));
-
 	return NULL;
 }
 
