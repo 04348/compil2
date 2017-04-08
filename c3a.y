@@ -7,21 +7,7 @@
 	int yylex();
 	int yyerror(char *s);
 
-	char var[512][256]; // Jusqu'à 512 var différentes, de 256 car. max
-	int val[512];
-	int nbVar = 0;
-	char var_tmp[256][256]; // Jusqu'à 256 var différentes, de 256 car. max
-	int val_tmp[256];
-	int nbVarTmp = 0;
-
-	// Jusqu'à 256 tableaux de 256 var différentes, de 256 car. max
-	// Note : Pour var_array[X][0] = "Arg1", var_array[X][Y] = "Arg2"
-	char var_array[256][256][256];
-	int val_array[256][256];
-	int nbArray = 0; // Nb de tableaux de variables
-	int nbVarArray[256]; // Nb de variables dans chaque tableau
-
-	enum operateur{oPl, oMo, oMu, oAnd, oOr, oInd, oNot, oAf, oAfc,
+	enum operateur{oPl, oMo, oMu, oAnd, oOr, oLt, oInd, oNot, oAf, oAfc,
 			oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
 
 	typedef struct nodeC3A nodeC3A;
@@ -39,10 +25,18 @@
 		nodeC3A* fils;
 	} nodeC3A;
 
+	typedef struct s_var env_var;
+	struct s_var{
+		char* id;
+		int size;
+		int type;
+		int val;
+		env_var** arr;
+	};
+
 	typedef struct heap heap;
 	typedef struct heap {
-		char* name;
-		int value;
+		env_var* variable;
 		heap* next;
 	} heap;
 	
@@ -60,9 +54,7 @@
 	environment* env_local = NULL;
 	environment* env_param = NULL;
 
-	char* copynew(char* str);
 	void proceedTree(nodeC3A* n);
-	void finishOld(nodeC3A* n);
 
 %}
 %union {
@@ -72,7 +64,7 @@
 
 %token<sval> V
 
-%left Pl Mo Mu And Or Ind Not Af Afc AfInd Sk Jp Jz St Param Call Ret
+%left Pl Mo Mu And Or Ind Not Af Afc AfInd Sk Jp Jz St Param Call Ret Lt
 %right SEP NLINE
 
 %type<nval> COMMAND ETI OPE ARG1 ARG2 DEST
@@ -92,6 +84,7 @@ OPE	: Pl SEP ARG1		{$$ = $3; $$->ope_i = oPl;}
 	| Mu SEP ARG1		{$$ = $3; $$->ope_i = oMu;}
 	| And SEP ARG1		{$$ = $3; $$->ope_i = oAnd;}
 	| Or SEP ARG1		{$$ = $3; $$->ope_i = oOr;}
+	| Lt SEP ARG1		{$$ = $3; $$->ope_i = oLt;}
 	| Not SEP ARG1		{$$ = $3; $$->ope_i = oNot;}
 	| Ind SEP ARG1		{$$ = $3; $$->ope_i = oInd;}
 	| Af SEP ARG1		{$$ = $3; $$->ope_i = oAf;}
@@ -114,125 +107,85 @@ ARG2: V SEP DEST		{$$ = $3; $$->arg2 = $1;}
 	| SEP DEST			{$$ = $2; $$->arg2 = strdup("");}
 	;
 	
-DEST: V NLINE ETI	{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = $3;}
-	| V NLINE		{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = NULL;}
-	| NLINE ETI			{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = $2;}
-	| NLINE				{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = NULL;}
-	| DEST NLINE		{$$ = $1;}
+DEST: V NNLINE ETI	{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = $3;}
+	| V NNLINE		{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = NULL;}
+	| NNLINE ETI			{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = $2;}
+	| NNLINE				{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = NULL;}
+	| DEST NNLINE		{$$ = $1;}
+	;
+
+NNLINE: NLINE
+	| NLINE NNLINE
 	;
 
 %%
 
-int new_var(char* str) {
-	val[nbVar] = 0;
-	strcpy(var[nbVar], str);
-	return nbVar++;
+env_var* clone_env_var(env_var* env_old, char* str) {
+	env_var* env_new = malloc(sizeof(env_var));
+	env_new->id = strdup(str);
+	env_new->size = env_old->size;
+	env_new->type = env_old->type;
+	env_new->val = env_old->val;
+	env_new->arr = env_old->arr;
+	return env_new;
 }
 
-int new_var_tmp(char* str) {
-	val_tmp[nbVarTmp] = 0;
-	strcpy(var_tmp[nbVarTmp], str);
-	return nbVarTmp++;
+env_var* new_env_var(char* str) {
+	env_var* variable = malloc(sizeof(env_var));
+	variable->id = strdup(str);
+	variable->type = 0;
+	variable->val = 0;
+	variable->arr = NULL;
+	return variable;
 }
 
-heap* new_var_env(environment* env, char* str) {
+heap* new_heap(environment* env, char* str) {
 	heap* new = malloc(sizeof(heap));
-	new->name = strdup(str);
-	new->value = 0;
+	new->variable = new_env_var(str);
 	new->next = env->first;
 	env->first = new;
 	return new;
 }
 
-int find_var(char* s) {
-	for (int i = 0 ; i < nbVar ; i++)
-		if (strcmp(s, var[i]) == 0)	return i;
-	return -1;
-}
-
-int find_var_tmp(char* s) {
-	for (int i = 0 ; i < nbVarTmp ; i++)
-		if (strcmp(s, var_tmp[i]) == 0)	return i;
-	return -1;
-}
-
-heap* find_var_env(environment* env, char* s) {
+heap* find_heap(environment* env, char* s) {
 	if (env == NULL)	return NULL;
 	heap* h = env->first;
 	while (h != NULL) {
-		if (strcmp(s, h->name) == 0)	return h;
+		if (strcmp(s, h->variable->id) == 0)	return h;
 		h = h->next;
 	}
 	return NULL;
 }
 
-int get_value(char* str){
-	if (isdigit(str[0]))	return atoi(str);
-	int index = find_var(str);
-	if (index != -1)	return val[index];
-
-	index = find_var_tmp(str);
-	if (index != -1)	return val_tmp[index];
-	return 0;
+env_var* get_env_var(environment* env, char* str){
+	heap* h = find_heap(env_param, str);
+	if (h == NULL)	h = find_heap(env_local, str);
+	if (h == NULL)	h = find_heap(env_global, str);
+	if (h == NULL)	h = new_heap(env, str);
+	return h->variable;
 }
 
 int get_value_env(environment* env, char* str){
 	if (isdigit(str[0]))	return atoi(str);
-	heap* h = find_var_env(env_param, str);
-	if (h == NULL)	h = find_var_env(env_local, str);
-	if (h == NULL)	h = find_var_env(env_global, str);
-	if (h == NULL)	h = new_var_env(env, str);
-	return h->value;
+	env_var* v = get_env_var(env, str);
+	return v->val;
 }
 
-int find_var_array1(char* Arg1){
-
-	// Trouver le tableau d'Arg1
-	for (int i = 0 ; i < nbArray ; i++)
-		if (strcmp(Arg1, var_array[i][0]) == 0)	return i;
-	return -1;
-}
-
-int find_var_array2(int index1, char* Arg2){
-
-	// Trouver la position d'Arg2
-	for (int i = 1 ; i < nbVarArray[index1]+1 ; i++)
-		if (strcmp(Arg2, var_array[index1][i]) == 0)	{return i;}
-	return -1;
-}
-
-int new_var_array1(char* Arg1){
-	val_array[nbArray][0] = 0;
-	strcpy(var_array[nbArray][0], Arg1);
-	nbVarArray[nbArray] = 0;
-	return nbArray++;
-}
-
-int new_var_array2(int index1, char* Arg2){
-	nbVarArray[index1]++;
-	val_array[index1][nbVarArray[index1]] = 0;
-	strcpy(var_array[index1][nbVarArray[index1]+1], Arg2);
-	return nbVarArray[index1];
-}
-
-int get_value_array(char* Arg1, char* Arg2){
-
-	// Trouver le tableau d'Arg1
-	int indexArr = find_var_array1(Arg1);
-	if (indexArr == -1) indexArr = new_var_array1(Arg1);
-
-	// Maintenant, trouver la valeur correspondant à Arg2
-	int indexVar = find_var_array2(indexArr, Arg2);
-	if (indexVar == -1) indexVar = new_var_array2(indexArr, Arg2);
-	
-	return val_array[indexArr][indexVar];
+void print_env_var(env_var* eVar) {
+	if (eVar->type == 0) {
+		printf("(%s:%d) ", eVar->id, eVar->val);
+		return;
+	}
+	printf("%s:[", eVar->id); 
+	for (int i = 0 ; i < eVar->size ; i++)
+		print_env_var(eVar->arr[i]);
+	printf("], ");
 }
 
 void proceedTree(nodeC3A* racine){
-	// operateur :	0 = Pl, 1 = Mo, 2 = Mu, 3 = Af, 4 = Afc, 5 = Sk,
-	//			6 = Jp, 7 = Jz, 8 = St
 
 	nodeC3A* actuel = racine;
+	env_local = malloc(sizeof(environment));
 	while(actuel != NULL){
 		nodeC3A* suivant = actuel->fils;
 
@@ -242,9 +195,9 @@ void proceedTree(nodeC3A* racine){
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				heap* h = find_var_env(env_local, actuel->dest);
-				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
-				h->value = v1 + v2;
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
+				h->variable->val = v1 + v2;
 				break;
 			}
 		case (oMo) : // Mo - proceeds the substraction
@@ -252,9 +205,9 @@ void proceedTree(nodeC3A* racine){
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				heap* h = find_var_env(env_local, actuel->dest);
-				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
-				h->value = v1 - v2;
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
+				h->variable->val = v1 - v2;
 				break;
 			}
 		case (oMu) : // Mu - proceeds the multiplication
@@ -262,9 +215,9 @@ void proceedTree(nodeC3A* racine){
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				heap* h = find_var_env(env_local, actuel->dest);
-				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
-				h->value = v1 * v2;
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
+				h->variable->val = v1 * v2;
 				break;
 			}
 		case (oAnd) : // And - proceeds the conjonction
@@ -272,9 +225,9 @@ void proceedTree(nodeC3A* racine){
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				heap* h = find_var_env(env_local, actuel->dest);
-				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
-				h->value = v1 && v2;
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
+				h->variable->val = v1 && v2;
 				break;
 			}
 		case (oOr) : // Or - proceeds the disjonction
@@ -282,9 +235,19 @@ void proceedTree(nodeC3A* racine){
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
 				
-				heap* h = find_var_env(env_local, actuel->dest);
-				if (h == NULL)	h = new_var_env(env_local, actuel->dest);
-				h->value = v1 || v2;
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
+				h->variable->val = v1 || v2;
+				break;
+			}
+		case (oLt) : // Lt - returns a boolean ("Arg1<Arg2" -> 1, else 0) in dest
+			{
+				int v1 = get_value_env(env_local, actuel->arg1);
+				int v2 = get_value_env(env_local, actuel->arg2);
+				
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
+				h->variable->val = v1 < v2;
 				break;
 			}
 		case (oInd) : // Ind - get a value from a 2D array
@@ -292,52 +255,53 @@ void proceedTree(nodeC3A* racine){
 				char* Arg1 = actuel->arg1;
 				char* Arg2 = actuel->arg2;
 				
-				int value = get_value_array_env(Arg1, Arg2);
+				/*int value = get_value_array_env(Arg1, Arg2);
 				heap* h = find_var_env(env_local, actuel->dest);
-				h->value = value;
+				h->variable->val = value;*/
 				break;
 			}
 		case (oNot) : // Not - proceeds the negation
 			{
 				int value = get_value_env(env_local, actuel->arg1);
 				
-				heap* h = find_var_env(env_local, actuel->dest);
+				heap* h = find_heap(env_local, actuel->dest);
+				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 
-				if (value == 0)	h->value = 1;
-				else	h->value = 0;
+				if (value == 0)	h->variable->val = 1;
+				else	h->variable->val = 0;
 				break;
 			}
 		case (oAf) : // Af
 			{
-				int value = get_value_env(actuel->arg2);
+				env_var* var = get_env_var(env_local, actuel->arg2);
 				
-				heap* h = find_var_env(actuel->arg1);
-				if(index == -1) {
-					index = new_var(actuel->arg1);
+				heap* h = find_heap(env_local, actuel->arg1);
+				if(h == NULL) {
+					h = new_heap(env_local, actuel->arg1);
 				}
-				val[index] = value;
+				h->variable = clone_env_var(var, actuel->arg1);
 				break;
 			}
 		case (oAfc) : // Afc
 			{
-				int value = get_value(actuel->arg1);
+				int value = get_value_env(env_local, actuel->arg1);
 				
-				int index = new_var_tmp(actuel->dest);
-				val_tmp[index] = value;
+				heap* h = new_heap(env_local, actuel->dest);
+				h->variable->val = value;
 				break;
 			}
 		case (oAfInd) : // AfInd - put a value in a 2D array
 			{
-				char* Arg1 = actuel->arg1;
+				/*char* Arg1 = actuel->arg1;
 				char* Arg2 = actuel->arg2;
-				int index1 = find_var_array1(Arg1);
+				int index1 = find_var_env(env_local, Arg1);
 				if (index1 == -1)	index1 = new_var_array1(Arg1);
 				int index2 = find_var_array2(index1, Arg2);
 				if (index2 == -1)	index2 = new_var_array2(index1, Arg2);
 				
 				int index = find_var_tmp(actuel->dest);
 				if (index == -1)	index = new_var_tmp(actuel->dest);
-				val_array[index1][index2] = val_tmp[index];
+				val_array[index1][index2] = val_tmp[index];*/
 				break;
 			}
 		case (oSk) : // Sk
@@ -357,7 +321,7 @@ void proceedTree(nodeC3A* racine){
 		case (oJz) : // Jz
 			{
 				char* dest_jmp = actuel->dest;
-				int value = get_value(actuel->arg1);
+				int value = get_value_env(env_local, actuel->arg1);
 				nodeC3A* nseek = nCFirst;
 				while ( (nseek != NULL) && !(strcmp(nseek->etiq, dest_jmp)==0) ) {
 					nseek = nseek->fils;
@@ -367,16 +331,16 @@ void proceedTree(nodeC3A* racine){
 			}
 		case (oSt) : // St
 			{
-				for (int i = 0 ; i < nbVar ; i++)
-					printf("(%s : %d) ", var[i], val[i]);
-				printf("\n");
-				for (int i = 0 ; i < nbArray ; i++) {
-					printf("Array %s: {", var_array[i][0]);
-					for (int j = 1 ; j < nbVarArray[i]+1 ; j++)
-						printf("(%s : %d) ", var_array[i][j], val_array[i][j]);
-					printf("}\n");
+				heap* h = env_local->first;
+				while (h != NULL) {
+					if((h->variable->id[0] != 'V' && h->variable->id[1] != 'A')
+					&& (h->variable->id[0] != 'C' && h->variable->id[1] != 'T')
+					&& (h->variable->id[0] != 'B' && h->variable->id[1] != 'L'))
+						print_env_var(h->variable);
+					h = h->next;
 				}
-				return;
+				printf("\n");
+				//return;
 			}
 		case (oParam) : // Param
 			{	// TODO Param Call Ret
