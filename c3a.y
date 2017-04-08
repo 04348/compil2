@@ -36,6 +36,7 @@
 
 	typedef struct heap heap;
 	typedef struct heap {
+		char* name;
 		env_var* variable;
 		heap* next;
 	} heap;
@@ -131,8 +132,10 @@ env_var* new_env_var_vide(char* str) {
 
 env_var* clone_env_var(env_var* env_old, char* str) {
 	if (env_old == NULL)	return new_env_var_vide(str);
+	//env_old->id = strdup(str);
+	//return env_old;
 	env_var* env_new = malloc(sizeof(env_var));
-	env_new->id = strdup(str);
+	env_new->id = strdup(env_old->id);
 	env_new->size = env_old->size;
 	env_new->type = env_old->type;
 	env_new->val = env_old->val;
@@ -142,6 +145,7 @@ env_var* clone_env_var(env_var* env_old, char* str) {
 
 heap* new_heap(environment* env, char* str) {
 	heap* new = malloc(sizeof(heap));
+	new->name = strdup(str);
 	new->variable = new_env_var_vide(str);
 	new->next = env->first;
 	env->first = new;
@@ -154,7 +158,7 @@ heap* find_heap(environment* env, char* s) {
 	heap* test = h;
 	while (h != NULL) {
 		if (h->variable == NULL)	return NULL;
-		if (strcmp(s, h->variable->id) == 0)	return h;
+		if (strcmp(s, h->name) == 0)	return h;
 		h = h->next;
 	}
 	return NULL;
@@ -170,10 +174,10 @@ env_var* get_env_var(environment* env, char* str){
 
 env_var* get_env_var_array(env_var* array, int index){
 	if (array == NULL)	return NULL;
-	if (array->type != 1)	return NULL;// Erreur?(type = 1):(do_nothing)
+	if (array->type != 1)	array->type = 1;// Erreur?(type = 1):(return NULL)
 	if (array->size <= index) {
 		array->arr = realloc(array->arr, (index+1)*sizeof(env_var*));
-		while (array->size < index+1) {
+		while (array->size <= index) {
 			char str[10];
 			snprintf(str, 10, "%d", array->size);
 			array->arr[array->size++] = new_env_var_vide(str);
@@ -193,7 +197,9 @@ void set_env_var_array(env_var* array, int index, env_var* src){
 			array->arr[array->size++] = new_env_var_vide(str);
 		}
 	}
-	array->arr[index] = clone_env_var(src, array->arr[index]->id);
+	src->id = array->arr[index]->id;
+	array->arr[index] = src;
+//	array->arr[index] = clone_env_var(src, array->arr[index]->id);
 }
 
 int get_value_env(environment* env, char* str){
@@ -202,15 +208,28 @@ int get_value_env(environment* env, char* str){
 	return v->val;
 }
 
-void print_env_var(env_var* eVar) {
+void print_env_var(env_var* eVar, int is_root, char* str) {
 	if (eVar->type == 0) {
-		printf("(%s:%d) ", eVar->id, eVar->val);
+		printf("(%s:%d) ", str, eVar->val);
 		return;
 	}
-	printf("%s:[", eVar->id); 
-	for (int i = 0 ; i < eVar->size ; i++)
-		print_env_var(eVar->arr[i]);
+	printf("%s:[", str); 
+	for (int i = 0 ; i < eVar->size ; i++) {
+		char str_new[10];
+		snprintf(str_new, 10, "%d", i);
+		print_env_var(eVar->arr[i], 1, str_new);
+	}
 	printf("], ");
+}
+
+void print_heap(heap* h) {
+	if((h->name[0] == 'V' && h->name[1] == 'A')
+	|| (h->name[0] == 'C' && h->name[1] == 'T')
+	|| (h->name[0] == 'B' && h->name[1] == 'L')
+	|| (isdigit(h->name[0])))
+		return;
+	env_var* eVar = h->variable;
+	print_env_var(eVar, 0, h->name);
 }
 
 void proceedTree(nodeC3A* racine){
@@ -220,7 +239,7 @@ void proceedTree(nodeC3A* racine){
 	while(actuel != NULL){
 		nodeC3A* suivant = actuel->fils;
 
-		// printf("%d %d\n", actuel->ope_i, oInd);
+		printf("%d %d\n", actuel->ope_i, oInd);
 		switch(actuel->ope_i) {
 		case (oPl) : // Pl - Proceeds the addition
 			{
@@ -291,7 +310,7 @@ void proceedTree(nodeC3A* racine){
 					h->variable->val = 1;
 				break;
 			}
-		case (oInd) : // Ind - get a value from a 2D array
+		case (oInd) : // Ind - get a value from an array
 			{
 				char* Arg1 = actuel->arg1;
 				int Arg2 = get_value_env(env_local, actuel->arg2);
@@ -300,7 +319,9 @@ void proceedTree(nodeC3A* racine){
 				env_var* value = get_env_var_array(array, Arg2);
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
-				h->variable = clone_env_var(value, h->variable->id);
+				value->id = h->variable->id;
+				h->variable = value;
+				//h->variable = clone_env_var(value, h->variable->id);
 				break;
 			}
 		case (oNot) : // Not - proceeds the negation
@@ -333,7 +354,7 @@ void proceedTree(nodeC3A* racine){
 				h->variable->val = value;
 				break;
 			}
-		case (oAfInd) : // AfInd - put a value in a 2D array
+		case (oAfInd) : // AfInd - put a value in an array
 			{
 				char* Arg1 = actuel->arg1;
 				int Arg2 = get_value_env(env_local, actuel->arg2);
@@ -374,10 +395,7 @@ void proceedTree(nodeC3A* racine){
 			{
 				heap* h = env_local->first;
 				while (h != NULL) {
-					if((h->variable->id[0] != 'V' && h->variable->id[1] != 'A')
-					&& (h->variable->id[0] != 'C' && h->variable->id[1] != 'T')
-					&& (h->variable->id[0] != 'B' && h->variable->id[1] != 'L'))
-						print_env_var(h->variable);
+					print_heap(h);
 					h = h->next;
 				}
 				printf("\n");
