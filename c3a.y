@@ -55,6 +55,7 @@
 	environment* env_local = NULL;
 	environment* env_param = NULL;
 
+	void init_environments();
 	void proceedTree(nodeC3A* n);
 
 %}
@@ -73,7 +74,7 @@
 
 %start COMMAND
 %%
-COMMAND	: ETI			{nCFirst = $1; proceedTree($1);}
+COMMAND	: ETI			{nCFirst = $1; init_environments(); proceedTree($1);}
 		;
 
 ETI	: V SEP OPE		{$$ = $3; $$->etiq = $1;}
@@ -121,6 +122,16 @@ NNLINE: NLINE
 
 %%
 
+environment* new_environment(){
+	return malloc(sizeof(environment));
+}
+
+void init_environments() {
+	env_global = new_environment();
+	env_local = env_global;
+	env_param = new_environment();
+}
+
 env_var* new_env_var_vide(char* str) {
 	env_var* variable = malloc(sizeof(env_var));
 	variable->id = strdup(str);
@@ -143,6 +154,7 @@ env_var* clone_env_var(env_var* env_old, char* str) {
 	return env_new;
 }
 
+// env != NULL
 heap* new_heap(environment* env, char* str) {
 	heap* new = malloc(sizeof(heap));
 	new->name = strdup(str);
@@ -155,9 +167,8 @@ heap* new_heap(environment* env, char* str) {
 heap* find_heap(environment* env, char* s) {
 	if (env == NULL)	return NULL;
 	heap* h = env->first;
-	heap* test = h;
 	while (h != NULL) {
-		if (h->variable == NULL)	return NULL;
+		//if (h->variable == NULL)	return NULL;// debug
 		if (strcmp(s, h->name) == 0)	return h;
 		h = h->next;
 	}
@@ -219,7 +230,7 @@ void print_env_var(env_var* eVar, int is_root, char* str) {
 		snprintf(str_new, 10, "%d", i);
 		print_env_var(eVar->arr[i], 1, str_new);
 	}
-	printf("], ");
+	printf("] ");
 }
 
 void print_heap(heap* h) {
@@ -235,7 +246,6 @@ void print_heap(heap* h) {
 void proceedTree(nodeC3A* racine){
 
 	nodeC3A* actuel = racine;
-	env_local = malloc(sizeof(environment));
 	while(actuel != NULL){
 		nodeC3A* suivant = actuel->fils;
 
@@ -366,11 +376,11 @@ void proceedTree(nodeC3A* racine){
 				
 				break;
 			}
-		case (oSk) : // Sk
+		case (oSk) : // Sk - do nothing
 			{
 				break;
 			}
-		case (oJp) : // Jp
+		case (oJp) : // Jp - Jump to a specified location
 			{
 				char* dest_jmp = actuel->dest;
 				nodeC3A* nseek = nCFirst;
@@ -380,7 +390,7 @@ void proceedTree(nodeC3A* racine){
 				if (nseek != NULL)	suivant = nseek;
 				break;
 			}
-		case (oJz) : // Jz
+		case (oJz) : // Jz - Jump to a specified location if Arg1==0
 			{
 				char* dest_jmp = actuel->dest;
 				int value = get_value_env(env_local, actuel->arg1);
@@ -391,9 +401,9 @@ void proceedTree(nodeC3A* racine){
 				if ((nseek != NULL) && (value==0))	suivant = nseek;
 				break;
 			}
-		case (oSt) : // St
+		case (oSt) : // St - Halt, end of the program
 			{
-				heap* h = env_local->first;
+				heap* h = env_global->first;
 				while (h != NULL) {
 					print_heap(h);
 					h = h->next;
@@ -401,8 +411,20 @@ void proceedTree(nodeC3A* racine){
 				printf("\n");
 				//return;
 			}
-		case (oParam) : // Param
-			{	// TODO Param Call Ret
+		case (oParam) : // Param - Enter parameters for the next function called
+			{	// TODO Vérifier que c'est bon
+				char* Arg1 = actuel->arg1;
+				env_var* Arg2 = get_env_var(env_local, actuel->arg2);
+				
+				heap* h = new_heap(env_param, Arg1);
+				h->variable = Arg2;
+				break;
+			}
+		case (oCall) : // Call - Calls a function
+			{	// TODO
+			}
+		case (oRet) : // Ret - Leave the actual function
+			{	// TODO
 			}
 		}
 
