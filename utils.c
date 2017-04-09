@@ -672,9 +672,36 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
+		case Wh:{
+			char* cond = PPtoC3A(env, n->condition);
+
+			nodeC3A* thenNode = nCActual;
+			PPtoC3A(env, n->l);
+
+			nodeC3A* elseNode = nCActual;
+
+			newNodeC3A(nbVarC3A++, oSk, strcopy("Sk")
+									, strcopy(""), strcopy(""),
+									 	strcopy(""), nCActual
+									);
+
+			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
+									, cond, strcopy(""),
+									 	elseNode->fils->etiq, thenNode
+									);
+
+			newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
+									, strcopy(""), strcopy(""),
+									 	thenNode->etiq, elseNode
+									);
+
+			return strcopy("");
+			break;
+		}
+
 //		### Op Logiques ###
 
-		case Lw:{
+		case Lw:{// x1 < x2
 			char* left = PPtoC3A(env, n->l);
 			char* right = PPtoC3A(env, n->r);
 			char* dest = malloc(32*sizeof(char));
@@ -686,6 +713,24 @@ char* PPtoC3A(environment* env, node* n){
 									, dest, nCActual);
 
 			return dest;
+			break;
+		}
+
+		case Lt:{ //x1 >= x2 Demander a Emile comment il a décomposé ce passage.
+			/*
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
+			char* dest = malloc(32*sizeof(char));
+
+			sprintf(dest, "CT%d", nbVarC3A++);
+
+			newNodeC3A(nbVarC3A++, oLt, strcopy("Lt")
+									, left, right
+									, dest, nCActual);
+
+			return dest;
+			*/
+			return strcopy("-NotYet..-");
 			break;
 		}
 
