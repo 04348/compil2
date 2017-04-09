@@ -644,17 +644,33 @@ char* PPtoC3A(environment* env, node* n){
 		}
 
 //		### CONDITIONS	###
-		case If:
+		case If:{
+			char* cond = PPtoC3A(env, n->condition);
+			nodeC3A* thenNode = nCActual;
+			PPtoC3A(env, n->r);
+
+			nodeC3A* elseNode = nCActual;
+			PPtoC3A(env, n->l);
+
+			newNodeC3A(nbVarC3A++, oSk, strcopy("Sk")
+									, strcopy(""), strcopy(""),
+									 	strcopy(""), nCActual
+									);
+
+			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
+									, cond, strcopy(""),
+									 	elseNode->fils->etiq, thenNode
+									);
+
+			newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
+									, strcopy(""), strcopy(""),
+									 	nCActual->etiq, elseNode
+									);
+
+			return strcopy("");
 
 			break;
-
-		case Th:
-
-			break;
-
-		case El:
-
-			break;
+		}
 
 //		### Op Logiques ###
 
@@ -665,19 +681,16 @@ char* PPtoC3A(environment* env, node* n){
 		case Eq:{ // pas fini.
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
+			//char* left = PPtoC3A(env, n->l);
+			//char* right = PPtoC3A(env, n->r);
 
 			newNodeC3A(nbVarC3A++, oMo, strcopy("Mo")
 										, PPtoC3A(env, n->l), PPtoC3A(env, n->r)
 										, name, nCActual);
 
-			char* dest = malloc(32*sizeof(char));
-			sprintf(dest, "VA%d", nbVarC3A++);
-
-			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
-									, strcopy(name), strcopy("")
-									, strcopy(dest), nCActual);
-			return dest;
-			break;}
+			return name;
+			break;
+		}
 
 		case Not:{
 			name = malloc(32*sizeof(char));

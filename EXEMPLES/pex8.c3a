@@ -1,0 +1,10 @@
+ET0		:Afc	:1		:		:BL0
+ET1		:Af	:Y		:BL0		:
+ET9		:Jz	:Y		:		:ET7
+ET3		:Afc	:1		:		:CT2
+ET5		:Pl	:X1		:CT2		:VA4
+ET6		:Af	:X2		:VA4		:
+ET10		:Jp	:		:		:ET8
+ET7		:Af	:X2		:X1		:
+ET8		:Sk	:		:		:
+ET11		:St	:		:		:
