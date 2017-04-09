@@ -674,18 +674,29 @@ char* PPtoC3A(environment* env, node* n){
 
 //		### Op Logiques ###
 
-		case Lt:
+		case Lt:{
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
+			char* dest = malloc(32*sizeof(char));
 
+			sprintf(dest, "CT%d", nbVarC3A++);
+
+			newNodeC3A(nbVarC3A++, oLt, strcopy("Lt")
+									, left, right
+									, dest, nCActual);
+
+			return dest;
 			break;
+		}
 
 		case Eq:{ // pas fini.
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
-			//char* left = PPtoC3A(env, n->l);
-			//char* right = PPtoC3A(env, n->r);
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
 
 			newNodeC3A(nbVarC3A++, oMo, strcopy("Mo")
-										, PPtoC3A(env, n->l), PPtoC3A(env, n->r)
+										, left, right
 										, name, nCActual);
 
 			return name;

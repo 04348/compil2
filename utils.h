@@ -56,7 +56,7 @@ struct s_func_env{
 		int size;
 };
 
-enum operateur{oPl, oMo, oMu, oAnd, oOr, oInd, oNot, oAf, oAfc,
+enum operateur{oPl, oMo, oMu, oAnd, oOr, oLt, oInd, oNot, oAf, oAfc,
                 oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
 
 typedef struct nodeC3A nodeC3A;
