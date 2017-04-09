@@ -239,7 +239,7 @@ void proceedTree(nodeC3A* racine){
 	while(actuel != NULL){
 		nodeC3A* suivant = actuel->fils;
 
-		printf("%d %d\n", actuel->ope_i, oInd);
+		//printf("%d %d\n", actuel->ope_i, oInd);
 		switch(actuel->ope_i) {
 		case (oPl) : // Pl - Proceeds the addition
 			{
