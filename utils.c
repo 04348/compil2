@@ -674,7 +674,7 @@ char* PPtoC3A(environment* env, node* n){
 
 //		### Op Logiques ###
 
-		case Lt:{
+		case Lw:{
 			char* left = PPtoC3A(env, n->l);
 			char* right = PPtoC3A(env, n->r);
 			char* dest = malloc(32*sizeof(char));

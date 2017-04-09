@@ -92,7 +92,7 @@ int main(int argc, char *argv[]){
 	glob_env = new_env();
 	functions = new_env_func();
 	yyparse();
-	
+
 	env_print(glob_env);
 	func_print(functions);
 	node_print(first_node);
