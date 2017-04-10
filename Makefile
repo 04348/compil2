@@ -1,5 +1,6 @@
 LIBS = -lfl
-CCFLAGS = -std=c99 -g
+CCFLAGS = -g -Wall -std=c99
+CC = gcc
 
 all:
 	make ipp
@@ -18,7 +19,7 @@ c3a: c3a.y c3a.l
 	cc  -c -o $@.tab.o $@.tab.c
 	lex -o $@.c $@.l
 	cc  -c -o $@.o $@.c
-	$(CC) $(LCFLAGS) -o $@ $@.tab.o $@.o
+	$(CC) $(CCFLAGS) -o $@ $@.tab.o $@.o
 	rm -rf $@.c $@.o $@.tab.c $@.tab.o $@.tab.h
 
 clean:

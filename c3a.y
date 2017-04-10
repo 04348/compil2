@@ -4,58 +4,17 @@
 	#include <string.h>
 	#include <ctype.h>
 	#include <unistd.h>
+	#include "utils.h"
 	int yylex();
 	int yyerror(char *s);
 
-	enum operateur{oPl, oMo, oMu, oAnd, oOr, oLt, oInd, oNot, oAf, oAfc,
-			oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
-
-	typedef struct nodeC3A nodeC3A;
-	typedef struct nodeC3A{
-		char* etiq; // Nom de l'étiquette
-
-		enum operateur ope_i; // Opérateur de l'opération actuelle
-		char* ope_s; // Nom de l'opérateur
-
-		char* arg1; // Premier argument
-		char* arg2; // Second argument
-		char* dest; // Nom de la destination
-
-		// le fils éventuel de cette nodeC3A (la ligne suivante)
-		nodeC3A* fils;
-	} nodeC3A;
-
-	typedef struct s_var env_var;
-	struct s_var{
-		char* id;
-		int size;
-		int type;
-		int val;
-		env_var** arr;
-	};
-
-	typedef struct heap heap;
-	typedef struct heap {
-		char* name;
-		env_var* variable;
-		heap* next;
-	} heap;
-	
-	typedef struct environment environment;
-	typedef struct environment {
-		heap* first;
-		environment* old;
-	}
-	environment;
-
 	nodeC3A* nCFirst = NULL;
-	nodeC3A* nCActual = NULL;
 
-	environment* env_global = NULL;
-	environment* env_local = NULL;
-	environment* env_param = NULL;
+	environnement* env_global = NULL;
+	environnement* env_local = NULL;
+	environnement* env_param = NULL;
 
-	void init_environments();
+	void init_environnements();
 	void proceedTree(nodeC3A* n, char* func_name);
 
 %}
@@ -74,13 +33,13 @@
 
 %start COMMAND
 %%
-COMMAND	: ETI			{nCFirst = $1; init_environments(); proceedTree($1, "main");}
+COMMAND	: ETI			{nCFirst = $1; init_environnements(); proceedTree($1, "main");}
 		;
 
 ETI	: V SEP OPE		{$$ = $3; $$->etiq = $1;}
-	| SEP OPE			{$$ = $2; $$->etiq = '\0';}
+	| SEP OPE			{$$ = $2; $$->etiq = strdup('\0');}
 	;
-	
+
 OPE	: Pl SEP ARG1		{$$ = $3; $$->ope_i = oPl;}
 	| Mo SEP ARG1		{$$ = $3; $$->ope_i = oMo;}
 	| Mu SEP ARG1		{$$ = $3; $$->ope_i = oMu;}
@@ -100,19 +59,19 @@ OPE	: Pl SEP ARG1		{$$ = $3; $$->ope_i = oPl;}
 	| Call SEP ARG1		{$$ = $3; $$->ope_i = oCall;}
 	| Ret SEP ARG1		{$$ = $3; $$->ope_i = oRet;}
 	;
-	
+
 ARG1: V SEP ARG2		{$$ = $3; $$->arg1 = $1;}
-	| SEP ARG2			{$$ = $2; $$->arg1 = '';}
+	| SEP ARG2			{$$ = $2; $$->arg1 = strdup("");}
 	;
-	
+
 ARG2: V SEP DEST		{$$ = $3; $$->arg2 = $1;}
-	| SEP DEST			{$$ = $2; $$->arg2 = '';}
+	| SEP DEST			{$$ = $2; $$->arg2 = strdup("");}
 	;
-	
+
 DEST: V NNLINE ETI	{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = $3;}
 	| V NNLINE		{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = NULL;}
-	| NNLINE ETI			{$$ = malloc(sizeof(nodeC3A)); $$->dest = '\0'; $$->fils = $2;}
-	| NNLINE				{$$ = malloc(sizeof(nodeC3A)); $$->dest = '\0'; $$->fils = NULL;}
+	| NNLINE ETI			{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = $2;}
+	| NNLINE				{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = NULL;}
 	| DEST NNLINE		{$$ = $1;}
 	;
 
@@ -122,16 +81,27 @@ NNLINE: NLINE
 
 %%
 
-environment* new_environment(){
-	return malloc(sizeof(environment));
+/**********************************************************
+***********************************************************
+***********************************************************
+                   PARTIE TRAITEMENT C3A
+***********************************************************
+***********************************************************
+**********************************************************/
+
+// Crée un nouvel environnement (global/local/param)
+environnement* new_environnement(){
+	return malloc(sizeof(environnement));
 }
 
-void init_environments() {
-	env_global = new_environment();
+// Initialise les environnements au début du programme C3A
+void init_environnements() {
+	env_global = new_environnement();
 	env_local = env_global;
-	env_param = new_environment();
+	env_param = new_environnement();
 }
 
+// Initialise un env_var nommé str et avec des valeurs nulles
 env_var* new_env_var_vide(char* str) {
 	env_var* variable = malloc(sizeof(env_var));
 	variable->id = strdup(str);
@@ -141,6 +111,8 @@ env_var* new_env_var_vide(char* str) {
 	return variable;
 }
 
+// Clone un env_var en donnant à la copie un nouvel id
+// Attention, si c'est un tableau, on copie la **référence** du tableau
 env_var* clone_env_var(env_var* env_old, char* str) {
 	if (env_old == NULL)	return new_env_var_vide(str);
 	//env_old->id = strdup(str);
@@ -154,8 +126,9 @@ env_var* clone_env_var(env_var* env_old, char* str) {
 	return env_new;
 }
 
-// env != NULL
-heap* new_heap(environment* env, char* str) {
+// Crée un nouveau heap nommé str, et l'ajoute à un environnement
+// env DOIT être différent de NULL (sinon segfault, volontaire)
+heap* new_heap(environnement* env, char* str) {
 	heap* new = malloc(sizeof(heap));
 	new->name = strdup(str);
 	new->variable = new_env_var_vide(str);
@@ -164,7 +137,8 @@ heap* new_heap(environment* env, char* str) {
 	return new;
 }
 
-heap* find_heap(environment* env, char* s) {
+// Cherche un heap nommé s dans un certain environnement
+heap* find_heap(environnement* env, char* s) {
 	if (env == NULL)	return NULL;
 	heap* h = env->first;
 	while (h != NULL) {
@@ -175,7 +149,10 @@ heap* find_heap(environment* env, char* s) {
 	return NULL;
 }
 
-env_var* get_env_var(environment* env, char* str){
+// Trouve la variable de nom str, en cherchant d'abord dans les paramètres,
+// puis dans les variables locales, puis dans les globales
+// Si introuvable, on la crée dans l'environnement spécifié
+env_var* get_env_var(environnement* env, char* str){
 	heap* h = find_heap(env_param, str);
 	if (h == NULL)	h = find_heap(env_local, str);
 	if (h == NULL)	h = find_heap(env_global, str);
@@ -183,6 +160,9 @@ env_var* get_env_var(environment* env, char* str){
 	return h->variable;
 }
 
+// Récupère la env_var stockée à la case index d'un tableau
+// > Traite également les cas où l'index dépasse du tableau, en
+// agrandissant ce dernier
 env_var* get_env_var_array(env_var* array, int index){
 	if (array == NULL)	return NULL;
 	if (array->type != 1)	array->type = 1;// Erreur?(type = 1):(return NULL)
@@ -197,6 +177,9 @@ env_var* get_env_var_array(env_var* array, int index){
 	return array->arr[index];
 }
 
+// Met un env_var à la case index d'un tableau
+// > Traite également les cas où l'index dépasse du tableau, en
+// agrandissant ce dernier
 void set_env_var_array(env_var* array, int index, env_var* src){
 	if (array == NULL)	return;
 	if (array->type != 1)	array->type = 1;
@@ -210,21 +193,23 @@ void set_env_var_array(env_var* array, int index, env_var* src){
 	}
 	src->id = array->arr[index]->id;
 	array->arr[index] = src;
-//	array->arr[index] = clone_env_var(src, array->arr[index]->id);
 }
 
-int get_value_env(environment* env, char* str){
+// Récupère la valeur de str : atoi() si str est un nombre, et sinon
+// on récupère la valeur de la variable correspondante
+int get_value_env(environnement* env, char* str){
 	if (isdigit(str[0]))	return atoi(str);
 	env_var* v = get_env_var(env, str);
 	return v->val;
 }
 
+// Pour print un env_var (récursive si c'est un tableau)
 void print_env_var(env_var* eVar, int is_root, char* str) {
 	if (eVar->type == 0) {
 		printf("(%s:%d) ", str, eVar->val);
 		return;
 	}
-	printf("%s:[", str); 
+	printf("%s:[", str);
 	for (int i = 0 ; i < eVar->size ; i++) {
 		char str_new[10];
 		snprintf(str_new, 10, "%d", i);
@@ -233,6 +218,7 @@ void print_env_var(env_var* eVar, int is_root, char* str) {
 	printf("] ");
 }
 
+// Pour print un heap (et son env_var)
 void print_heap(heap* h) {
 	if((h->name[0] == 'V' && h->name[1] == 'A')
 	|| (h->name[0] == 'C' && h->name[1] == 'T')
@@ -243,6 +229,7 @@ void print_heap(heap* h) {
 	print_env_var(eVar, 0, h->name);
 }
 
+// Tout
 void proceedTree(nodeC3A* racine, char* func_name){
 
 	nodeC3A* actuel = racine;
@@ -255,7 +242,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				h->variable->val = v1 + v2;
@@ -265,7 +252,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				h->variable->val = v1 - v2;
@@ -275,7 +262,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				h->variable->val = v1 * v2;
@@ -285,7 +272,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				if (v1 == 0 && v2 == 0)
@@ -298,7 +285,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				if (v1 == 0 || v2 == 0)
@@ -311,7 +298,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				int v1 = get_value_env(env_local, actuel->arg1);
 				int v2 = get_value_env(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				if (v1 < v2)
@@ -324,20 +311,19 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				char* Arg1 = actuel->arg1;
 				int Arg2 = get_value_env(env_local, actuel->arg2);
-				
+
 				env_var* array = get_env_var(env_local, Arg1);
 				env_var* value = get_env_var_array(array, Arg2);
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				value->id = h->variable->id;
 				h->variable = value;
-				//h->variable = clone_env_var(value, h->variable->id);
 				break;
 			}
 		case (oNot) : // Not - proceeds the negation
 			{
 				int value = get_value_env(env_local, actuel->arg1);
-				
+
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 
@@ -348,7 +334,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 		case (oAf) : // Af
 			{
 				env_var* var = get_env_var(env_local, actuel->arg2);
-				
+
 				heap* h = find_heap(env_local, actuel->arg1);
 				if(h == NULL) {
 					h = new_heap(env_local, actuel->arg1);
@@ -359,7 +345,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 		case (oAfc) : // Afc
 			{
 				int value = get_value_env(env_local, actuel->arg1);
-				
+
 				heap* h = new_heap(env_local, actuel->dest);
 				h->variable->val = value;
 				break;
@@ -373,7 +359,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
 				set_env_var_array(array, Arg2, h->variable);
-				
+
 				break;
 			}
 		case (oSk) : // Sk - do nothing
@@ -418,7 +404,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{	// TODO Vérifier que c'est bon
 				char* Arg1 = actuel->arg1;
 				env_var* Arg2 = get_env_var(env_local, actuel->arg2);
-				
+
 				heap* h = new_heap(env_param, Arg1);
 				h->variable = Arg2;
 				break;
@@ -426,10 +412,10 @@ void proceedTree(nodeC3A* racine, char* func_name){
 		case (oCall) : // Call - Calls a function
 			{
 				int Arg2 = atoi(actuel->arg2); // nombre de paramètres
-				
+
 				// ca1
 				// P'l
-				environment* new_env_local = new_environment();
+				environnement* new_env_local = new_environnement();
 				new_env_local->old = env_local;
 				env_local = new_env_local;
 				//P'l =  Pp
@@ -447,7 +433,7 @@ void proceedTree(nodeC3A* racine, char* func_name){
 				else	env_param->first = NULL;
 
 				// ca3
-				environment* new_env_param = new_environment();
+				environnement* new_env_param = new_environnement();
 				new_env_param->old = env_param;
 				env_param = new_env_param;
 
@@ -461,9 +447,16 @@ void proceedTree(nodeC3A* racine, char* func_name){
 				break;
 			}
 		case (oRet) : // Ret - Leave the actual function
-			{	
-				heap* h = env_local->first;
-				printf("Etat de la fonction %s : ", func_name);
+			{
+				heap* result = env_local->first;
+
+				env_local = env_local->old;
+				while ((result != NULL)
+				&& ((strcmp(result->name, func_name) != 0)
+				&& (strcmp(result->name, "RETFUN") != 0)))
+					result = result->next;
+
+				heap* h = result;
 				while (h != NULL) {
 					print_heap(h);
 					h = h->next;
@@ -471,15 +464,14 @@ void proceedTree(nodeC3A* racine, char* func_name){
 				printf("\n");
 
 
-				heap* result = env_local->first;
-				env_local = env_local->old;
-				env_param = env_param->old;
 				if ((result != NULL)
 				&& ((strcmp(result->name, func_name) == 0)
 				|| (strcmp(result->name, "RETFUN") == 0))) {
 					h = find_heap(env_local, result->name);
+					if (h == NULL)	h = new_heap(env_local, result->name);
 					h->variable = result->variable;
 				}
+				env_param = env_param->old;
 				return;
 			}
 		}

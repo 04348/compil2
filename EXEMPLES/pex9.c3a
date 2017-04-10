@@ -1,0 +1,12 @@
+ET1		:Afc	:10		:		:CT0
+ET2		:Af	:X2		:CT0		:
+ET4		:Afc	:15		:		:CT3
+ET5		:Param	:X		:CT3		:
+ET6		:Param	:Y		:B1		:
+ET7		:Call	:prot		:2		:
+ET8		:St	:		:		:
+prot		:Sk	:		:		:
+ET10		:Afc	:2		:		:CT9
+ET12		:Mu	:X		:CT9		:VA11
+ET13		:Af	:X1		:VA11		:
+ET14		:Ret	:		:		:

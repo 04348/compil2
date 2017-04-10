@@ -679,7 +679,7 @@ char* PPtoC3A(environment* env, node* n){
 		}
 
 		case Na:{//New array
-			return strcopy("");
+			return NULL;
 			break;
 		}
 

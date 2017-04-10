@@ -41,6 +41,7 @@ variable			{numeral}|{ident}
 "Param"			{return Param;}
 "Call"			{return Call;}
 "Ret"			{return Ret;}
+"Lt"			{return Lt;}
 
 ":"				{return SEP;}
 "\n"			{return NLINE;}

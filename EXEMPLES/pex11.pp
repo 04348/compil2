@@ -4,7 +4,7 @@ var X2 : integer
 defun foo1(X : integer, Y : boolean):integer
     var Z : integer
     foo1:= X+1
-    
+
 defun foo2(X : integer):integer
     var T : integer
     foo2 := X+T
