@@ -7,6 +7,7 @@
 
 %define api.value.type {node*}
 %token T_boo T_int T_array Fp Cfun Cpro Def Dep Af Sk true false Se If Th El Var Wh Do Pl Mo Mu And Or Not Lt Gt Lw Gr Eq V V_array I Na Ta Po Pc Co Cc Ao Ac Dp Vg Arg Carg Darg Type Ev
+%left Af Se El Do Pl Mo Mu And Or
 
 %%
 MP: LD_vart LD C		{}

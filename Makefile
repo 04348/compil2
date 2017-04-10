@@ -4,6 +4,8 @@ CC = gcc
 
 all:
 	make ipp
+	make tradc3a
+	make interc3a
 	make clean
 
 ipp: ipp.y ipp.l utils.c

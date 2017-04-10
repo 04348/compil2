@@ -358,7 +358,8 @@ void proceedTree(nodeC3A* racine, char* func_name){
 				env_var* array = get_env_var(env_local, Arg1);
 				heap* h = find_heap(env_local, actuel->dest);
 				if (h == NULL)	h = new_heap(env_local, actuel->dest);
-				set_env_var_array(array, Arg2, h->variable);
+				env_var* test = clone_env_var(h->variable, h->variable->id);
+				set_env_var_array(array, Arg2, test);
 
 				break;
 			}
