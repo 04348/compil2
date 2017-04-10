@@ -415,7 +415,7 @@ void* node_exec(environment* env, node* n){
 			break;
 		}
 		case Wh:{
-			if(ret_val(env, n->condition) == 0){
+			while(ret_val(env, n->condition) == 0){
 				node_exec(env, n->l);
 			}
 			break;
