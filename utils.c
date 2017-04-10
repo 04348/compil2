@@ -711,24 +711,6 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
-		case Lt:{ //x1 >= x2 Demander a Emile comment il a décomposé ce passage.
-			/*
-			char* left = PPtoC3A(env, n->l);
-			char* right = PPtoC3A(env, n->r);
-			char* dest = malloc(32*sizeof(char));
-
-			sprintf(dest, "CT%d", nbVarC3A++);
-
-			newNodeC3A(nbVarC3A++, oLt, strcopy("Lt")
-									, left, right
-									, dest, nCActual);
-
-			return dest;
-			*/
-			return strcopy("-NotYet..-");
-			break;
-		}
-
 		case Eq:{ // pas fini.
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
