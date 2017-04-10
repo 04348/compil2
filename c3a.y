@@ -78,7 +78,7 @@ COMMAND	: ETI			{nCFirst = $1; init_environments(); proceedTree($1, "main");}
 		;
 
 ETI	: V SEP OPE		{$$ = $3; $$->etiq = $1;}
-	| SEP OPE			{$$ = $2; $$->etiq = strdup('\0');}
+	| SEP OPE			{$$ = $2; $$->etiq = '\0';}
 	;
 	
 OPE	: Pl SEP ARG1		{$$ = $3; $$->ope_i = oPl;}
@@ -102,17 +102,17 @@ OPE	: Pl SEP ARG1		{$$ = $3; $$->ope_i = oPl;}
 	;
 	
 ARG1: V SEP ARG2		{$$ = $3; $$->arg1 = $1;}
-	| SEP ARG2			{$$ = $2; $$->arg1 = strdup("");}
+	| SEP ARG2			{$$ = $2; $$->arg1 = '';}
 	;
 	
 ARG2: V SEP DEST		{$$ = $3; $$->arg2 = $1;}
-	| SEP DEST			{$$ = $2; $$->arg2 = strdup("");}
+	| SEP DEST			{$$ = $2; $$->arg2 = '';}
 	;
 	
 DEST: V NNLINE ETI	{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = $3;}
 	| V NNLINE		{$$ = malloc(sizeof(nodeC3A)); $$->dest = $1; $$->fils = NULL;}
-	| NNLINE ETI			{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = $2;}
-	| NNLINE				{$$ = malloc(sizeof(nodeC3A)); $$->dest = strdup("\0"); $$->fils = NULL;}
+	| NNLINE ETI			{$$ = malloc(sizeof(nodeC3A)); $$->dest = '\0'; $$->fils = $2;}
+	| NNLINE				{$$ = malloc(sizeof(nodeC3A)); $$->dest = '\0'; $$->fils = NULL;}
 	| DEST NNLINE		{$$ = $1;}
 	;
 
