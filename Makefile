@@ -14,6 +14,14 @@ ipp: ipp.y ipp.l utils.c
 	gcc $(CCFLAGS) $(LIBS) -c utils.c
 	gcc ipp.tab.o ipp.yy.o utils.o -o ipp
 
+tradc3a: tradc3a.y tradc3a.l utils.c
+	bison tradc3a.y --defines=bison_ipp.h -o tradc3a.tab.c
+	flex -o tradc3a.yy.c tradc3a.l
+	gcc $(CCFLAGS) $(LIBS) -c tradc3a.tab.c
+	gcc $(CCFLAGS) $(LIBS) -c tradc3a.yy.c
+	gcc $(CCFLAGS) $(LIBS) -c utils.c
+	gcc tradc3a.tab.o tradc3a.yy.o utils.o -o tradc3a
+
 interc3a: interc3a.y interc3a.l
 	yacc --file-prefix=$@ -d $@.y
 	cc  -c -o $@.tab.o $@.tab.c
