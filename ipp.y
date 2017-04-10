@@ -59,7 +59,7 @@ Argt: V Dp TP						{$$ = new_node(Arg, $1, $3, NULL);}
 
 TP: T_boo							{$$ = new_node_val(Type, T_boo, NULL, NULL, NULL);}
 	| T_int							{$$ = new_node_val(Type, T_int, NULL, NULL, NULL);}
-	| Ta TP							{$$ = new_node_val(Type, $2->key.i, $1, NULL, NULL);}
+	| Ta TP							{$$ = new_node_val(Type, T_array, $2, NULL, NULL);}
 
 
 LD_vart: %empty						{$$ = NULL;}

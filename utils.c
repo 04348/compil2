@@ -28,12 +28,13 @@ int get_type(node* n){
 		|| n->type == Not
 		|| n->type == T_boo) return T_boo;
 	if(n->type == V_array){
-		node* at = n->l;
+		return -1;
+		/*node* at = n->l;
 		int f_type = 0;
 		while (at->type != V && at->l != NULL){
 			at = at->l;
 		}
-		return get_type(at);
+		return get_type(at);*/
 	}
 		//|| n->type == T_array
 	if(n->type == Na) return -1;
@@ -377,11 +378,6 @@ void* node_exec(environment* env, node* n){
 			} else if((n->r)->type == V_array) { //Affectation de la valeur d'un tableau'
 				env_var* var = (env_var*)node_exec(env, n->r);
 				if(var->type == V_array || var->type == T_array){
-
-					if(cvar->type != T_array){
-						printf("Erreur de Typage : %s af %s\n", getToken(cvar->type), getToken(var->type));
-						exit(0);
-					}
 					cvar->arr = var->arr;
 					cvar->size = var->size;
 				} else {
