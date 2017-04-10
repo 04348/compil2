@@ -12,6 +12,25 @@ node* first_node;
 environment_func *functions;
 environment *glob_env;
 
+int get_type(node* n){
+	if(n->type == Pl 
+		|| n->type == Mo
+		|| n->type == Mu
+		|| n->type == T_int) return T_int;
+	if(n->type == Or
+		|| n->type == And
+		|| n->type == Not
+		|| n->type == T_boo) return T_boo;
+	if(n->type == V_array
+		|| n->type == T_array) return T_array;
+}
+
+void check_type(node* n1, node* n2){
+	if(get_type(n1)==get_type(n2)) return;
+	printf("Erreur de typage\n");
+	exit(0);
+}
+
 char* strcopy(char* str){
 	if (str == NULL) return NULL;
 	int size = strlen(str);

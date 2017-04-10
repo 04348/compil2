@@ -11,10 +11,10 @@
 %%
 MP: L_vart LD C		{setup_env(glob_env, $1);}
 
-E: 	E Pl E			{$$ = new_node(Pl, $1, $3, NULL);}
-	| E Mo E		{$$ = new_node(Mo, $1, $3, NULL);}
-	| E Mu E		{$$ = new_node(Mu, $1, $3, NULL);}
-	| E Or E		{$$ = new_node(Or, $1, $3, NULL);}
+E: 	E Pl E			{check_type($1, $3); $$ = new_node(Pl, $1, $3, NULL);}
+	| E Mo E		{check_type($1, $3); $$ = new_node(Mo, $1, $3, NULL);}
+	| E Mu E		{check_type($1, $3); $$ = new_node(Mu, $1, $3, NULL);}
+	| E Or E		{check_type($1, $3); $$ = new_node(Or, $1, $3, NULL);}
 	| E Lt E		{$$ = new_node(Or, new_node(Lw, $1, $3, NULL), new_node(Eq, $1, $3, NULL), NULL);}
 	| E Gt E		{$$ = new_node(Or, new_node(Lw, $3, $1, NULL), new_node(Eq, $1, $3, NULL), NULL);}
 	| E Lw E		{$$ = new_node(Lw, $1, $3, NULL);}

@@ -79,6 +79,10 @@ extern node* first_node;
 extern environment_func *functions;
 extern environment *glob_env;
 
+int get_type(node* n);
+
+void check_type(node* n1, node* n2);
+
 /*
  *	Creer une node d'arbre de syntaxe abstrait.
  */
