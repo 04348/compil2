@@ -13,6 +13,14 @@ ipp: ipp.y ipp.l utils.c
 	gcc $(CCFLAGS) $(LIBS) -c utils.c
 	gcc ipp.tab.o ipp.yy.o utils.o -o ipp
 
+c3a: c3a.y c3a.l
+	yacc --file-prefix=$@ -d $@.y
+	cc  -c -o $@.tab.o $@.tab.c
+	lex -o $@.c $@.l
+	cc  -c -o $@.o $@.c
+	$(CC) $(LCFLAGS) -o $@ $@.tab.o $@.o
+	rm -rf $@.c $@.o $@.tab.c $@.tab.o $@.tab.h
+
 clean:
 	rm -f *.yy.c
 	rm -f *.tab.c
