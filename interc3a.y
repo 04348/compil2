@@ -450,18 +450,18 @@ void proceedTree(nodeC3A* racine, char* func_name){
 			{
 				heap* result = env_local->first;
 
-				env_local = env_local->old;
-				while ((result != NULL)
-				&& ((strcmp(result->name, func_name) != 0)
-				&& (strcmp(result->name, "RETFUN") != 0)))
-					result = result->next;
-
 				heap* h = result;
 				while (h != NULL) {
 					print_heap(h);
 					h = h->next;
 				}
 				printf("\n");
+
+				env_local = env_local->old;
+				while ((result != NULL)
+				&& ((strcmp(result->name, func_name) != 0)
+				&& (strcmp(result->name, "RETFUN") != 0)))
+					result = result->next;
 
 
 				if ((result != NULL)

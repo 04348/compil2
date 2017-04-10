@@ -14,7 +14,7 @@ ipp: ipp.y ipp.l utils.c
 	gcc $(CCFLAGS) $(LIBS) -c utils.c
 	gcc ipp.tab.o ipp.yy.o utils.o -o ipp
 
-c3a: c3a.y c3a.l
+interc3a: interc3a.y interc3a.l
 	yacc --file-prefix=$@ -d $@.y
 	cc  -c -o $@.tab.o $@.tab.c
 	lex -o $@.c $@.l

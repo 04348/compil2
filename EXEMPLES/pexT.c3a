@@ -1,12 +1,4 @@
-ET1		:Afc	:4		:		:CT0
-ET2		:Af	:X1		:CT0		:
-ET4		:Afc	:5		:		:CT3
-ET5		:Af	:X2		:CT3		:
-ET7		:Lt	:X1		:X2		:CT6
-ET14		:Jz	:CT6		:		:ET13
-ET9		:Afc	:1		:		:CT8
-ET11		:Mo	:X2		:CT8		:VA10
-ET12		:Af	:X2		:VA10		:
-ET15		:Jp	:		:		:ET7
-ET13		:Sk	:		:		:
-ET16		:St	:		:		:
+ET1		:Afc	:1		:		:CT0
+ET3		:Pl	:X2		:CT0		:VA2
+ET4		:Af	:X1		:VA2		:
+ET5		:St	:		:		:

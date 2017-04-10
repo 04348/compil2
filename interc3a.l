@@ -1,7 +1,7 @@
 %option noyywrap
 /* Variables globales */
 %{
-	#include "c3a.tab.h"
+	#include "interc3a.tab.h"
 	#include <string.h>
 	#define YY_DECL int yylex()
 %}
@@ -52,4 +52,3 @@ variable			{numeral}|{ident}
 <<EOF>>			{return 0;}
 
 %%
-
