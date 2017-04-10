@@ -124,6 +124,8 @@ void func_print(environment_func* env);
 
 void* node_exec(environment* env, node* n);
 
+char* getToken(int tk);
+
 int yylex();
 
 int yyerror(char *s);

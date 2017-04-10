@@ -13,19 +13,41 @@ environment_func *functions;
 environment *glob_env;
 
 int get_type(node* n){
+	if(n->type == V){
+		int index = var_geti(glob_env, n->key.c);
+		if (index == -1 ) return -1;
+		return (glob_env->vars[index])->type;
+	}
 	if(n->type == Pl 
 		|| n->type == Mo
 		|| n->type == Mu
-		|| n->type == T_int) return T_int;
+		|| n->type == T_int
+		|| n->type == I) return T_int;
 	if(n->type == Or
 		|| n->type == And
 		|| n->type == Not
 		|| n->type == T_boo) return T_boo;
-	if(n->type == V_array
-		|| n->type == T_array) return T_array;
+	if(n->type == V_array){
+		node* at = n->l;
+		int f_type = 0;
+		while (at->type != V && at->l != NULL){
+			at = at->l;
+		}
+		return get_type(at);
+	}
+		//|| n->type == T_array
+	if(n->type == Na) return -1;
+	return -1;
 }
 
 void check_type(node* n1, node* n2){
+	/*if(n1->type == V){
+		if(get_vari(glob_env)
+	} else if(n1->type == V_array){
+		return
+	} */
+	//printf("Check type : %s & %s\n", getToken(get_type(n1)), getToken(get_type(n2)));
+	if(get_type(n1)==-1 || get_type(n2)==-1) return;
 	if(get_type(n1)==get_type(n2)) return;
 	printf("Erreur de typage\n");
 	exit(0);
@@ -113,7 +135,6 @@ int var_geti(environment* env, char* id){
 	for(int i = 0; i < env->nb_var; ++i){
 		if(strcmp(env->vars[i]->id, id) == 0) return i;
 	}
-	printf("Variable %s n'existe pas.\n", id);
 	return -1;
 }
 

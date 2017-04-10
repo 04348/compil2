@@ -9,18 +9,18 @@
 %token T_boo T_int T_array Fp Cfun Cpro Def Dep Af Sk true false Se If Th El Var Wh Do Pl Mo Mu And Or Not Lt Gt Lw Gr Eq V V_array I Na Ta Po Pc Co Cc Ao Ac Dp Vg Arg Carg Darg Type Ev
 
 %%
-MP: L_vart LD C		{setup_env(glob_env, $1);}
+MP: LD_vart LD C		{}
 
 E: 	E Pl E			{check_type($1, $3); $$ = new_node(Pl, $1, $3, NULL);}
 	| E Mo E		{check_type($1, $3); $$ = new_node(Mo, $1, $3, NULL);}
 	| E Mu E		{check_type($1, $3); $$ = new_node(Mu, $1, $3, NULL);}
 	| E Or E		{check_type($1, $3); $$ = new_node(Or, $1, $3, NULL);}
-	| E Lt E		{$$ = new_node(Or, new_node(Lw, $1, $3, NULL), new_node(Eq, $1, $3, NULL), NULL);}
-	| E Gt E		{$$ = new_node(Or, new_node(Lw, $3, $1, NULL), new_node(Eq, $1, $3, NULL), NULL);}
-	| E Lw E		{$$ = new_node(Lw, $1, $3, NULL);}
-	| E Gr E		{$$ = new_node(Lw, $3, $1, NULL);}
-	| E Eq E		{$$ = new_node(Eq, $1, $3, NULL);}
-	| E And E		{$$ = new_node(And, $1, $3, NULL);}
+	| E Lt E		{check_type($1, $3); $$ = new_node(Or, new_node(Lw, $1, $3, NULL), new_node(Eq, $1, $3, NULL), NULL);}
+	| E Gt E		{check_type($1, $3); $$ = new_node(Or, new_node(Lw, $3, $1, NULL), new_node(Eq, $1, $3, NULL), NULL);}
+	| E Lw E		{check_type($1, $3); $$ = new_node(Lw, $1, $3, NULL);}
+	| E Gr E		{check_type($1, $3); $$ = new_node(Lw, $3, $1, NULL);}
+	| E Eq E		{check_type($1, $3); $$ = new_node(Eq, $1, $3, NULL);}
+	| E And E		{check_type($1, $3); $$ = new_node(And, $1, $3, NULL);}
 	| Not E			{$$ = new_node(Not, $2, NULL, NULL);}
 	| Po E Pc		{$$ = $2;}
 	| I				{$$ = $1;}
@@ -35,8 +35,8 @@ Et: V Co E Cc		{$$ = new_node(V_array, $1, $3, NULL);} //tableau
 	| Et Co E Cc	{$$ = new_node(V_array, $1, $3, NULL);} //tableau >1D
 
 C: 	C Se C				{$$ = new_node(Se, $1, $3, NULL);}
-	| Et Af E			{$$ = new_node(Af, $1, $3, NULL);}
-	| V Af E			{$$ = new_node(Af, $1, $3, NULL);}
+	| Et Af E			{check_type($1, $3); $$ = new_node(Af, $1, $3, NULL);}
+	| V Af E			{check_type($1, $3); $$ = new_node(Af, $1, $3, NULL);}
 	| Sk				{$$ = NULL;}
 	| Ao C Ac			{$$ = $2;}
 	| If E Th C El C	{$$ = new_node(If, $4, $6, $2);}
@@ -59,7 +59,11 @@ Argt: V Dp TP						{$$ = new_node(Arg, $1, $3, NULL);}
 
 TP: T_boo							{$$ = new_node_val(Type, T_boo, NULL, NULL, NULL);}
 	| T_int							{$$ = new_node_val(Type, T_int, NULL, NULL, NULL);}
-	| Ta TP							{$$ = new_node_val(Type, T_array, $2, NULL, NULL);}
+	| Ta TP							{$$ = new_node_val(Type, $2->key.i, $1, NULL, NULL);}
+
+
+LD_vart: %empty						{$$ = NULL;}
+		| L_vartnn					{setup_env(glob_env, $1);}
 
 L_vart: %empty						{$$ = NULL;}
 		| L_vartnn					{$$ = $1;}
