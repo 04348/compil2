@@ -352,6 +352,7 @@ void* node_exec(environment* env, node* n){
 			node_exec(env, n->r);
 			break;
 		}
+		
 //		### Variables/Constantes ###
 		case I:{
 			return (void*)((intptr_t)n->key.i);
@@ -604,6 +605,8 @@ char* PPtoC3A(environment* env, node* n){
 			PPtoC3A(env, n->l);
 			PPtoC3A(env, n->r);
 			break;}
+
+		
 //		### Variables/Constantes ###
 		case I:{ //Valeur
 			name = malloc(32*sizeof(char));
@@ -678,6 +681,17 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
+		case Sk:{
+			printf("HELOOOOOOOOOOOOOOOO\n");
+			char* name = malloc(sizeof(char)* 32);
+			sprintf(name, "ET%d", nbVarC3A);
+			newNodeC3A(nbVarC3A++, oSk, strcopy("Sk--")
+						, strcopy(""), strcopy("")
+						, strcopy(""), nCActual);
+			return name;
+			break;
+		}
+
 		case Na:{//New array
 			return NULL;
 			break;
@@ -736,25 +750,47 @@ char* PPtoC3A(environment* env, node* n){
 		case If:{
 			char* cond = PPtoC3A(env, n->condition);
 			nodeC3A* thenNode = nCActual;
-			PPtoC3A(env, n->r);
+			if(n->r != NULL){
+				PPtoC3A(env, n->r);
 
-			nodeC3A* elseNode = nCActual;
-			PPtoC3A(env, n->l);
+				nodeC3A* elseNode = nCActual;
+				PPtoC3A(env, n->l);
 
-			newNodeC3A(nbVarC3A++, oSk, strcopy("Sk")
-									, strcopy(""), strcopy(""),
-									 	strcopy(""), nCActual
-									);
+				newNodeC3A(nbVarC3A++, oSk, strcopy("Sk")
+										, strcopy(""), strcopy(""),
+										 	strcopy(""), nCActual
+										);
 
-			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
-									, cond, strcopy(""),
-									 	elseNode->fils->etiq, thenNode
-									);
+				newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
+										, cond, strcopy(""),
+										 	elseNode->fils->etiq, thenNode
+										);
 
-			newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
-									, strcopy(""), strcopy(""),
-									 	nCActual->etiq, elseNode
-									);
+				newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
+										, strcopy(""), strcopy(""),
+										 	nCActual->etiq, elseNode
+										);
+			} else {
+
+				nodeC3A* aft = nCActual;
+				PPtoC3A(env, n->l);
+				newNodeC3A(nbVarC3A++, oSk, strcopy("Sk")
+										, strcopy(""), strcopy(""),
+										 	strcopy(""), nCActual
+										);
+
+				newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
+										, strcopy(""), strcopy(""),
+										 	nCActual->etiq, thenNode
+										);
+
+				newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
+										, cond, strcopy(""),
+										 	thenNode->fils->fils->etiq, thenNode
+										);
+
+
+			}
 
 			return strcopy("");
 

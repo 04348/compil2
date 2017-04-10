@@ -103,7 +103,6 @@ int main(int argc, char *argv[]){
 	node_exec(glob_env , first_node);
 	env_print(glob_env);
 
-	beginPPtoC3A(glob_env, first_node);
 
 	return 0;
 }
