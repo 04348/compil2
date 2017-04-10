@@ -13,7 +13,7 @@ environment_func *functions;
 environment *glob_env;
 
 int get_type(node* n){
-	if(n->type == Pl 
+	if(n->type == Pl
 		|| n->type == Mo
 		|| n->type == Mu
 		|| n->type == T_int) return T_int;
@@ -28,7 +28,7 @@ int get_type(node* n){
 void check_type(node* n1, node* n2){
 	if(get_type(n1)==get_type(n2)) return;
 	printf("Erreur de typage\n");
-	exit(0);
+	//exit(0);
 }
 
 char* strcopy(char* str){
@@ -447,8 +447,8 @@ void* node_exec(environment* env, node* n){
 			break;
 		}
 		case Eq:{
-			return (void*)( 
-				(intptr_t)(ret_val(env, n->l))==(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1 
+			return (void*)(
+				(intptr_t)(ret_val(env, n->l))==(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
 			);
 		}
 	}
@@ -484,6 +484,43 @@ void newNodeC3A(int etiq, enum operateur op, char* strOp, char* arg1, char* arg2
 		nCActual = new;
 }
 
+void newFuncC3A(char* etiq, enum operateur op, char* strOp, char* arg1, char* arg2, char* dest, nodeC3A* p){
+	nodeC3A* new = (nodeC3A*)malloc(sizeof(nodeC3A));
+	new->etiq = etiq;
+	new->ope_i = op;
+	new->ope_s = strOp;
+	new->arg1 = arg1;
+	new->arg2 = arg2;
+	new->dest = dest;
+
+	if(p != NULL){
+		new->fils = p->fils;
+		p->fils = new;
+	} else {
+		new->fils = nCFirst;
+		nCFirst = new;
+	}
+	if(p == nCActual)
+		nCActual = new;
+}
+
+void setup_fun_c3a(environment* env, node* c, node* d, int* nb){
+	if(c == NULL || d == NULL)	return;
+	if(c->type == Carg && d->type == Darg){
+		setup_fun_c3a(env, c->l, d->l, nb);
+		setup_fun_c3a(env, c->r, d->r, nb);
+	} else if(d->type == Arg){
+			*nb+=1;
+			char* arg = PPtoC3A(env, c);
+			newNodeC3A(nbVarC3A++, oParam, strcopy("Param")
+									, strcopy((d->l)->key.c), arg
+									, strcopy(""), nCActual
+								);
+
+	}
+
+}
+
 void printTreeIMP(nodeC3A* first){
 	nodeC3A* n = first;
 	while (n != NULL) {
@@ -503,6 +540,24 @@ nodeC3A* beginPPtoC3A(environment* env, node* n){
 	newNodeC3A(nbVarC3A++, oSt, strcopy("St")
 							, strcopy(""), strcopy("")
 							, strcopy(""), nCActual);
+
+	for(int i = 0; i < functions->nb_func; i++){
+		char* name = malloc(32*sizeof(char));
+		sprintf(name, "%s", functions->funcs[i]->id);
+		//Début de fonction...
+		newFuncC3A(name, oSk, strcopy("Sk")
+								, strcopy(""), strcopy("")
+								, strcopy(""), nCActual
+							);
+		//Code de la fonction...
+		PPtoC3A(env, functions->funcs[i]->prog);
+
+		//Fin de fonction.
+		newNodeC3A(nbVarC3A++, oRet, strcopy("Ret")
+								, strcopy(""), strcopy("")
+								, strcopy(""), nCActual
+							);
+	}
 
 	printTreeIMP(nCFirst);
 
@@ -597,7 +652,7 @@ char* PPtoC3A(environment* env, node* n){
 		}
 
 		case Na:{//New array
-			return NULL;
+			return strcopy("");
 			break;
 		}
 
@@ -683,6 +738,7 @@ char* PPtoC3A(environment* env, node* n){
 
 			nodeC3A* before = nCActual;
 			PPtoC3A(env, n->l);
+			nodeC3A* present = nCActual;
 
 			char* cond = PPtoC3A(env, n->condition);
 			nodeC3A* whNode = nCActual;
@@ -694,7 +750,7 @@ char* PPtoC3A(environment* env, node* n){
 
 			newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
 							, strcopy(""), strcopy("")
-							, whNode->etiq, before
+							, present->fils->etiq, before
 						);
 
 			return strcopy("");
@@ -708,7 +764,7 @@ char* PPtoC3A(environment* env, node* n){
 			char* right = PPtoC3A(env, n->r);
 			char* dest = malloc(32*sizeof(char));
 
-			sprintf(dest, "CT%d", nbVarC3A++);
+			sprintf(dest, "VA%d", nbVarC3A++);
 
 			newNodeC3A(nbVarC3A++, oLt, strcopy("Lt")
 									, left, right
@@ -773,6 +829,8 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
+		// ##### Acces Tableau .... ##########
+
 		case V_array:{//Ind
 			name = malloc(32*sizeof(char));
 			sprintf(name, "VA%d", nbVarC3A++);
@@ -786,6 +844,44 @@ char* PPtoC3A(environment* env, node* n){
 			break;
 		}
 
+		// ########-----    Functions -------------############
+
+		case Type:{
+
+			break;
+		}
+
+		case Carg:{
+			char* left = PPtoC3A(env, n->l);
+			char* right = PPtoC3A(env, n->r);
+
+			return strcopy(left);
+			break;
+		}
+
+		case Fp:{ //Fonction Protocole
+			char* left = n->l->key.c; // Nom de fonction
+			env_func* f = getFunc(functions, left);
+			int nbParam = 0;
+			setup_fun_c3a(env, n->r, f->args, &nbParam);
+
+			char* nb = malloc(32*sizeof(char));
+			sprintf(nb, "%d", nbParam);
+
+			newNodeC3A(nbVarC3A++, oCall, strcopy("Call")
+									, left, nb
+									,	strcopy(""), nCActual
+								);
+			//a finir
+			return strcopy(left);
+			break;
+		}
+
+		/*case Cargs:{
+
+			break;
+		}*/
+
 		default:{
 			//fprintf(stderr, "No type found : %s\n", getToken(n->type));
 			return strcopy("");
@@ -796,6 +892,8 @@ char* PPtoC3A(environment* env, node* n){
 	//fprintf(stderr, "No type found : %s", getToken(n->type));
 	return NULL;
 }
+
+
 
 node* new_node_str(int type, char* key, node* l, node* r, node* c){
 	node* output = malloc(sizeof(node));
