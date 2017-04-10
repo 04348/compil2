@@ -56,7 +56,7 @@
 	environment* env_param = NULL;
 
 	void init_environments();
-	void proceedTree(nodeC3A* n);
+	void proceedTree(nodeC3A* n, char* func_name);
 
 %}
 %union {
@@ -74,7 +74,7 @@
 
 %start COMMAND
 %%
-COMMAND	: ETI			{nCFirst = $1; init_environments(); proceedTree($1);}
+COMMAND	: ETI			{nCFirst = $1; init_environments(); proceedTree($1, "main");}
 		;
 
 ETI	: V SEP OPE		{$$ = $3; $$->etiq = $1;}
@@ -243,13 +243,13 @@ void print_heap(heap* h) {
 	print_env_var(eVar, 0, h->name);
 }
 
-void proceedTree(nodeC3A* racine){
+void proceedTree(nodeC3A* racine, char* func_name){
 
 	nodeC3A* actuel = racine;
 	while(actuel != NULL){
 		nodeC3A* suivant = actuel->fils;
 
-		//printf("%d %d\n", actuel->ope_i, oInd);
+		//printf("%d %d\n", actuel->ope_i, oCall);
 		switch(actuel->ope_i) {
 		case (oPl) : // Pl - Proceeds the addition
 			{
@@ -403,13 +403,16 @@ void proceedTree(nodeC3A* racine){
 			}
 		case (oSt) : // St - Halt, end of the program
 			{
-				heap* h = env_global->first;
+				printf("Etat du main : ");
+				heap* h = env_local->first;
 				while (h != NULL) {
 					print_heap(h);
 					h = h->next;
 				}
 				printf("\n");
 				//return;
+				suivant = NULL;
+				break;
 			}
 		case (oParam) : // Param - Enter parameters for the next function called
 			{	// TODO Vérifier que c'est bon
@@ -421,10 +424,63 @@ void proceedTree(nodeC3A* racine){
 				break;
 			}
 		case (oCall) : // Call - Calls a function
-			{	// TODO
+			{
+				int Arg2 = atoi(actuel->arg2); // nombre de paramètres
+				
+				// ca1
+				// P'l
+				environment* new_env_local = new_environment();
+				new_env_local->old = env_local;
+				env_local = new_env_local;
+				//P'l =  Pp
+				heap* params = NULL;
+				if (Arg2>0)	params = env_param->first;
+				env_local->first = params;
+
+				// ca2
+				for (int i = 1 ; i < Arg2 ; i++)
+					params = params->next;
+				if (Arg2>0)	{
+					env_param->first = params->next;
+					params->next = NULL;
+				}
+				else	env_param->first = NULL;
+
+				// ca3
+				environment* new_env_param = new_environment();
+				new_env_param->old = env_param;
+				env_param = new_env_param;
+
+				// ca4
+				char* dest_jmp = actuel->arg1;
+				nodeC3A* nseek = nCFirst;
+				while ( (nseek != NULL) && !(strcmp(nseek->etiq, dest_jmp)==0) ) {
+					nseek = nseek->fils;
+				}
+				proceedTree(nseek, strdup(actuel->arg1));
+				break;
 			}
 		case (oRet) : // Ret - Leave the actual function
-			{	// TODO
+			{	
+				heap* h = env_local->first;
+				printf("Etat de la fonction %s : ", func_name);
+				while (h != NULL) {
+					print_heap(h);
+					h = h->next;
+				}
+				printf("\n");
+
+
+				heap* result = env_local->first;
+				env_local = env_local->old;
+				env_param = env_param->old;
+				if ((result != NULL)
+				&& ((strcmp(result->name, func_name) == 0)
+				|| (strcmp(result->name, "RETFUN") == 0))) {
+					h = find_heap(env_local, result->name);
+					h->variable = result->variable;
+				}
+				return;
 			}
 		}
 
