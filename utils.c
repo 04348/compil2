@@ -673,27 +673,22 @@ char* PPtoC3A(environment* env, node* n){
 		}
 
 		case Wh:{
-			char* cond = PPtoC3A(env, n->condition);
 
-			nodeC3A* thenNode = nCActual;
+			nodeC3A* before = nCActual;
 			PPtoC3A(env, n->l);
 
-			nodeC3A* elseNode = nCActual;
-
-			newNodeC3A(nbVarC3A++, oSk, strcopy("Sk")
-									, strcopy(""), strcopy(""),
-									 	strcopy(""), nCActual
-									);
+			char* cond = PPtoC3A(env, n->condition);
+			nodeC3A* whNode = nCActual;
 
 			newNodeC3A(nbVarC3A++, oJz, strcopy("Jz")
-									, cond, strcopy(""),
-									 	elseNode->fils->etiq, thenNode
-									);
+									, cond, strcopy("")
+									, before->fils->etiq, nCActual
+							);
 
 			newNodeC3A(nbVarC3A++, oJp, strcopy("Jp")
-									, strcopy(""), strcopy(""),
-									 	thenNode->etiq, elseNode
-									);
+							, strcopy(""), strcopy("")
+							, whNode->etiq, before
+						);
 
 			return strcopy("");
 			break;
