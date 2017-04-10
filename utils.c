@@ -327,9 +327,26 @@ void setup_fun_env(environment* env, environment* fenv, node* c, node* d){
 		setup_fun_env(env, fenv, c->r, d->r);
 	} else if (d->type == Arg) {
 		new_var(fenv, (d->l)->key.c, (d->r)->key.i, ret_val(env, c));
+		if(d->r->key.i == T_array) {
+			env_var* dv = fenv->vars[var_geti(fenv, (d->l)->key.c)];
+			env_var* cv = env->vars[var_geti(env, c->key.c)];
+			dv->arr = cv->arr;
+			dv->size = cv->size;
+		}
 	}
 	return;
 }
+/*
+void setup_fun_env(node* c, node* d){
+	if(c == NULL || d == NULL) return;
+	if(c->type == Carg && d->type == Darg){
+		setup_fun_env(c->l, d->l);
+		setup_fun_env(c->r, d->r);
+	} else if (d->type == Arg) {
+		Param + (d->l)->key.c + PP_ToC3A(c);
+	}
+	return;
+}*/
 
 void* node_exec(environment* env, node* n){
 	if(n==NULL) return (void*)-1;
@@ -368,7 +385,7 @@ void* node_exec(environment* env, node* n){
 			env_var* cvar = (env_var*)node_exec(env, n->l);
 
 			if((n->r)->type == Na) { //Affectation d'un nouveau tableau'
-				cvar->size = (intptr_t)(node_exec(env, n->r));
+				cvar->size = (intptr_t)(ret_val(env, (n->r)->r));
 				cvar->arr = malloc(sizeof(env_var*)*cvar->size);
 				cvar->type = T_array;
 				for(int i = 0; i < cvar->size; ++i){
@@ -403,7 +420,7 @@ void* node_exec(environment* env, node* n){
 			break;
 		}
 		case Wh:{
-			while(ret_val(env, n->condition) == 0){
+			if(ret_val(env, n->condition) == 0){
 				node_exec(env, n->l);
 			}
 			break;
@@ -415,14 +432,14 @@ void* node_exec(environment* env, node* n){
 				new_var(fenv, (n->l)->key.c, T_int, 0);
 				setup_env(fenv, f->nenv);
 				setup_fun_env(env, fenv, n->r, f->args);
-				env_print(fenv);
+				//env_print(fenv);
 				node_exec(fenv, f->prog);
 				return (void*)( (intptr_t)(fenv->vars[var_geti(fenv, (n->l)->key.c)])->val);
 			} else { //Protocole
 				environment* fenv = new_env();
 				setup_env(fenv, f->nenv);
 				setup_fun_env(env, fenv, n->r, f->args);
-				env_print(fenv);
+				//env_print(fenv);
 				node_exec(merge_env(fenv, glob_env), f->prog);
 			}
 			break;
@@ -443,9 +460,7 @@ void* node_exec(environment* env, node* n){
 //		### Op Logiques ###
 		case Or:{
 			int val1 = (intptr_t)(node_exec(env, n->l));
-			printf("Val1 : %d\n", val1);
 			int val2 = (intptr_t)(node_exec(env, n->r));
-			printf("Val2 : %d\n", val2);
 			return (void*)( (intptr_t)(!val1|!val2)?(intptr_t)0:(intptr_t)1);
 			break;
 		}
