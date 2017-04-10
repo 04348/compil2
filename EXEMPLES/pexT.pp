@@ -2,11 +2,11 @@ var X1 : integer,
 var X2 : integer,
 var Y : boolean
 
-X1 := 10;
+X1 := 12;
 X2 := 12;
 Y := true;
-if (X1 < X2)
+if (X1 > X2)
     then
-    X2 := 1
+    Y := true
     else
-    X1 := 25
+    Y := false

@@ -407,16 +407,18 @@ void* node_exec(environment* env, node* n){
 //		### Op Logiques ###
 		case Or:{
 			int val1 = (intptr_t)(node_exec(env, n->l));
+			printf("Val1 : %d\n", val1);
 			int val2 = (intptr_t)(node_exec(env, n->r));
-			return (void*)( (intptr_t)(val1|val2) );
+			printf("Val2 : %d\n", val2);
+			return (void*)( (intptr_t)(!val1|!val2)?(intptr_t)0:(intptr_t)1);
 			break;
 		}
 		case Not:{
-			return (void*)( (intptr_t)!((intptr_t)(node_exec(env, n->l))) );
+			return (void*)( (intptr_t)!((intptr_t)(node_exec(env, n->l)))?(intptr_t)0:(intptr_t)1);
 			break;
 		}
 		case And:{
-			return (void*)( (intptr_t)(node_exec(env, n->l))&(intptr_t)(node_exec(env, n->r)) );
+			return (void*)( (intptr_t)(node_exec(env, n->l))&(intptr_t)(node_exec(env, n->r)) ?(intptr_t)0:(intptr_t)1);
 			break;
 		}
 		case Lw:{
@@ -425,25 +427,11 @@ void* node_exec(environment* env, node* n){
 				);
 			break;
 		}
-		case Lt:{
-			return (void*)(
-				(intptr_t)(ret_val(env, n->l))<=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
-				);
-			break;
+		case Eq:{
+			return (void*)( 
+				(intptr_t)(ret_val(env, n->l))==(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1 
+			);
 		}
-		case Gr:{
-			return (void*)(
-				(intptr_t)(ret_val(env, n->l))>(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
-				);
-			break;
-		}
-		case Gt:{
-			return (void*)(
-				(intptr_t)(ret_val(env, n->l))>=(intptr_t)(ret_val(env, n->r))?(intptr_t)0:(intptr_t)1
-				);
-			break;
-		}
-
 	}
 	return (void*)-1;
 }
