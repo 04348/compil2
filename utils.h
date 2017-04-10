@@ -56,6 +56,20 @@ struct s_func_env{
 		int size;
 };
 
+	typedef struct heap heap;
+	typedef struct heap {
+		char* name;
+		env_var* variable;
+		heap* next;
+	} heap;
+	
+	typedef struct environnement environnement;
+	typedef struct environnement {
+		heap* first;
+		environnement* old;
+	}
+	environnement;
+
 enum operateur{oPl, oMo, oMu, oAnd, oOr, oLt, oInd, oNot, oAf, oAfc,
                 oAfInd, oSk, oJp, oJz, oSt, oParam, oCall, oRet};
 
@@ -123,6 +137,8 @@ void env_print(environment* env);
 void func_print(environment_func* env);
 
 void* node_exec(environment* env, node* n);
+
+char* getToken(int tk);
 
 int yylex();
 
